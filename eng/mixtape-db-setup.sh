@@ -39,6 +39,10 @@ for i in {1..30}; do
   sleep 1
   if [ "$i" -eq 30 ]; then
     echo "[mixtape-db-setup] ERROR: PostgreSQL did not become ready in time." >&2
+    echo "[mixtape-db-setup] DEBUG: Attempting manual connection for diagnostics..." >&2
+    psql -h localhost -U "$PGADMIN_USER" -d postgres -c '\l' || true
+    netstat -an | grep 5432 || true
+    env | grep POSTGRES || true
     exit 1
   fi
 done
