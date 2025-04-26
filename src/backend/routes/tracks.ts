@@ -130,4 +130,50 @@ router.delete('/:id', async (req: Request, res: Response) => {
   }
 });
 
+// PATCH /api/tracks/:id - Edit track metadata (title, id3 fields)
+router.patch('/:id', async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { title, id3 } = req.body;
+  if (!title && !id3) {
+    return res.status(400).json({ error: 'No fields to update.' });
+  }
+  try {
+    // Fetch current track
+    const trackResult = await pool.query('SELECT * FROM tracks WHERE id = $1', [id]);
+    if (trackResult.rowCount === 0) {
+      return res.status(404).json({ error: 'Track not found' });
+    }
+    const current = trackResult.rows[0];
+    // Prepare new values
+    const newTitle = title ?? current.title;
+    // Merge id3 fields if provided
+    let newId3 = current.id3 || {};
+    if (id3 && typeof id3 === 'object') {
+      newId3 = { ...newId3, ...id3 };
+    }
+    // Update DB
+    const updateResult = await pool.query(
+      'UPDATE tracks SET title = $1, id3 = $2 WHERE id = $3 RETURNING *',
+      [newTitle, newId3, id],
+    );
+    res.json({ track: updateResult.rows[0] });
+  } catch (err) {
+    res.status(500).json({ error: 'Update failed', details: err });
+  }
+});
+
+// GET /api/tracks/:id - Get a single track by ID
+router.get('/:id', async (req: Request, res: Response) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.query('SELECT * FROM tracks WHERE id = $1', [id]);
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: 'Track not found' });
+    }
+    res.json({ track: result.rows[0] });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch track', details: err });
+  }
+});
+
 export default router;
