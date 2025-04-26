@@ -5,8 +5,8 @@ import FormData from 'form-data';
 import { Pool } from 'pg';
 import dotenv from 'dotenv';
 import assert from 'assert';
+import nodeID3 from 'node-id3';
 
-const nodeID3 = require('node-id3');
 
 dotenv.config({ path: path.resolve(__dirname, '../src/backend/.env') });
 
