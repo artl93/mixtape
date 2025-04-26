@@ -29,18 +29,6 @@ log() {
 # By default, PGADMIN_USER will use your current shell username ($USER).
 PGADMIN_USER="${PGADMIN_USER:-$USER}"
 
-log "Creating user $DB_USER if not exists..."
-psql -h localhost -U "$PGADMIN_USER" -d postgres -tc "SELECT 1 FROM pg_roles WHERE rolname='$DB_USER'" | grep -q 1 || \
-  psql -h localhost -U "$PGADMIN_USER" -d postgres -c "CREATE USER $DB_USER WITH ENCRYPTED PASSWORD '$DB_PASSWORD';"
-
-log "Creating database $DB_NAME if not exists..."
-psql -h localhost -U "$PGADMIN_USER" -d postgres -tc "SELECT 1 FROM pg_database WHERE datname = '$DB_NAME'" | grep -q 1 || \
-  psql -h localhost -U "$PGADMIN_USER" -d postgres -c "CREATE DATABASE $DB_NAME;"
-
-log "Granting privileges on $DB_NAME to $DB_USER..."
-psql -h localhost -U "$PGADMIN_USER" -d postgres -c "GRANT ALL PRIVILEGES ON DATABASE $DB_NAME TO $DB_USER;"
-psql -h localhost -U "$PGADMIN_USER" -d postgres -c "GRANT ALL ON SCHEMA public TO $DB_USER;"
-
 # Wait for PostgreSQL to be ready (max 30s)
 for i in {1..30}; do
   if psql -h localhost -U "$PGADMIN_USER" -d postgres -c '\q' 2>/dev/null; then
@@ -54,6 +42,18 @@ for i in {1..30}; do
     exit 1
   fi
 done
+
+log "Creating user $DB_USER if not exists..."
+psql -h localhost -U "$PGADMIN_USER" -d postgres -tc "SELECT 1 FROM pg_roles WHERE rolname='$DB_USER'" | grep -q 1 || \
+  psql -h localhost -U "$PGADMIN_USER" -d postgres -c "CREATE USER $DB_USER WITH ENCRYPTED PASSWORD '$DB_PASSWORD';"
+
+log "Creating database $DB_NAME if not exists..."
+psql -h localhost -U "$PGADMIN_USER" -d postgres -tc "SELECT 1 FROM pg_database WHERE datname = '$DB_NAME'" | grep -q 1 || \
+  psql -h localhost -U "$PGADMIN_USER" -d postgres -c "CREATE DATABASE $DB_NAME;"
+
+log "Granting privileges on $DB_NAME to $DB_USER..."
+psql -h localhost -U "$PGADMIN_USER" -d postgres -c "GRANT ALL PRIVILEGES ON DATABASE $DB_NAME TO $DB_USER;"
+psql -h localhost -U "$PGADMIN_USER" -d postgres -c "GRANT ALL ON SCHEMA public TO $DB_USER;"
 
 log "Running schema migration from $INIT_SQL_PATH..."
 psql postgresql://$DB_USER:$DB_PASSWORD@localhost:5432/$DB_NAME -v ON_ERROR_STOP=1 -f "$INIT_SQL_PATH"
