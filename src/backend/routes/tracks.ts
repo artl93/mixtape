@@ -4,6 +4,7 @@ import pool from '../services/db';
 import path from 'path';
 import fs from 'fs';
 import { parseFile } from 'music-metadata';
+import type { ICommonTagsResult, IFormat } from 'music-metadata';
 
 const router = Router();
 
@@ -44,14 +45,17 @@ router.post('/upload', upload.single('audio'), async (req: Request, res: Respons
       metadata = {};
     }
     // Flatten some common ID3 tags for easy access
-    const meta = metadata as { common?: any; format?: any };
+    const meta = metadata as { common?: ICommonTagsResult; format?: IFormat };
     const id3 = {
       artist: meta.common?.artist || null,
       album: meta.common?.album || null,
       year: meta.common?.year || null,
-      genre: meta.common?.genre ? meta.common.genre.join(', ') : null,
+      genre: Array.isArray(meta.common?.genre)
+        ? meta.common.genre.join(', ')
+        : meta.common?.genre || null,
       duration: meta.format?.duration || null,
-      track: meta.common?.track?.no || null,
+      track:
+        meta.common?.track && typeof meta.common.track === 'object' ? meta.common.track.no : null,
       title: meta.common?.title || title,
     };
 
@@ -173,6 +177,16 @@ router.get('/:id', async (req: Request, res: Response) => {
     res.json({ track: result.rows[0] });
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch track', details: err });
+  }
+});
+
+// GET /api/tracks - List all tracks
+router.get('/', async (_req: Request, res: Response) => {
+  try {
+    const result = await pool.query('SELECT * FROM tracks ORDER BY created_at DESC');
+    res.json({ tracks: result.rows });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch tracks', details: err });
   }
 });
 
