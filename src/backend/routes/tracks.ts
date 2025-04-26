@@ -37,27 +37,28 @@ router.post('/upload', upload.single('audio'), async (req: Request, res: Respons
     const fileUrl = `/uploads/${file.filename}`;
 
     // Extract ID3 metadata from the uploaded file
-    let metadata: any = {};
+    let metadata: unknown = {};
     try {
       metadata = await parseFile(file.path);
-    } catch (err) {
+    } catch {
       metadata = {};
     }
     // Flatten some common ID3 tags for easy access
+    const meta = metadata as { common?: any; format?: any };
     const id3 = {
-      artist: metadata.common?.artist || null,
-      album: metadata.common?.album || null,
-      year: metadata.common?.year || null,
-      genre: metadata.common?.genre ? metadata.common.genre.join(', ') : null,
-      duration: metadata.format?.duration || null,
-      track: metadata.common?.track?.no || null,
-      title: metadata.common?.title || title,
+      artist: meta.common?.artist || null,
+      album: meta.common?.album || null,
+      year: meta.common?.year || null,
+      genre: meta.common?.genre ? meta.common.genre.join(', ') : null,
+      duration: meta.format?.duration || null,
+      track: meta.common?.track?.no || null,
+      title: meta.common?.title || title,
     };
 
     // Insert into DB (add id3 fields as JSON for now)
     const result = await pool.query(
       'INSERT INTO tracks (user_id, title, file_url, id3) VALUES ($1, $2, $3, $4) RETURNING *',
-      [user_id, id3.title, fileUrl, id3]
+      [user_id, id3.title, fileUrl, id3],
     );
     res.status(201).json({ track: result.rows[0] });
   } catch (err) {
