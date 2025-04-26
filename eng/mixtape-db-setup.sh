@@ -35,10 +35,11 @@ fi
 # Set PGADMIN_PASSWORD if provided (for CI or local superuser password)
 # Usage: PGADMIN_USER=postgres PGADMIN_PASSWORD=yourpassword ./eng/mixtape-db-setup.sh
 # In CI, PGADMIN_PASSWORD should be set to the value of POSTGRES_PASSWORD secret
+export PGPASSWORD="$PGADMIN_PASSWORD"
 
 # Wait for PostgreSQL to be ready (max 30s)
 for i in {1..30}; do
-  if PGPASSWORD="$PGADMIN_PASSWORD" psql -h localhost -U "$PGADMIN_USER" -d postgres -c '\q' 2>/dev/null; then
+  if psql -h localhost -U "$PGADMIN_USER" -d postgres -c '\q' 2>/dev/null; then
     echo "[mixtape-db-setup] PostgreSQL is up!"
     break
   fi
@@ -47,7 +48,7 @@ for i in {1..30}; do
   if [ "$i" -eq 30 ]; then
     echo "[mixtape-db-setup] ERROR: PostgreSQL did not become ready in time." >&2
     echo "[mixtape-db-setup] DEBUG: Attempting manual connection for diagnostics..." >&2
-    PGPASSWORD="$PGADMIN_PASSWORD" psql -h localhost -U "$PGADMIN_USER" -d postgres -c '\l' || true
+    psql -h localhost -U "$PGADMIN_USER" -d postgres -c '\l' || true
     netstat -an | grep 5432 || true
     env | grep POSTGRES || true
     exit 1
@@ -55,16 +56,16 @@ for i in {1..30}; do
 done
 
 log "Creating user $DB_USER if not exists..."
-PGPASSWORD="$PGADMIN_PASSWORD" psql -h localhost -U "$PGADMIN_USER" -d postgres -tc "SELECT 1 FROM pg_roles WHERE rolname='$DB_USER'" | grep -q 1 || \
-  PGPASSWORD="$PGADMIN_PASSWORD" psql -h localhost -U "$PGADMIN_USER" -d postgres -c "CREATE USER $DB_USER WITH ENCRYPTED PASSWORD '$DB_PASSWORD';"
+psql -h localhost -U "$PGADMIN_USER" -d postgres -tc "SELECT 1 FROM pg_roles WHERE rolname='$DB_USER'" | grep -q 1 || \
+  psql -h localhost -U "$PGADMIN_USER" -d postgres -c "CREATE USER $DB_USER WITH ENCRYPTED PASSWORD '$DB_PASSWORD';"
 
 log "Creating database $DB_NAME if not exists..."
-PGPASSWORD="$PGADMIN_PASSWORD" psql -h localhost -U "$PGADMIN_USER" -d postgres -tc "SELECT 1 FROM pg_database WHERE datname = '$DB_NAME'" | grep -q 1 || \
-  PGPASSWORD="$PGADMIN_PASSWORD" psql -h localhost -U "$PGADMIN_USER" -d postgres -c "CREATE DATABASE $DB_NAME;"
+psql -h localhost -U "$PGADMIN_USER" -d postgres -tc "SELECT 1 FROM pg_database WHERE datname = '$DB_NAME'" | grep -q 1 || \
+  psql -h localhost -U "$PGADMIN_USER" -d postgres -c "CREATE DATABASE $DB_NAME;"
 
 log "Granting privileges on $DB_NAME to $DB_USER..."
-PGPASSWORD="$PGADMIN_PASSWORD" psql -h localhost -U "$PGADMIN_USER" -d postgres -c "GRANT ALL PRIVILEGES ON DATABASE $DB_NAME TO $DB_USER;"
-PGPASSWORD="$PGADMIN_PASSWORD" psql -h localhost -U "$PGADMIN_USER" -d postgres -c "GRANT ALL ON SCHEMA public TO $DB_USER;"
+psql -h localhost -U "$PGADMIN_USER" -d postgres -c "GRANT ALL PRIVILEGES ON DATABASE $DB_NAME TO $DB_USER;"
+psql -h localhost -U "$PGADMIN_USER" -d postgres -c "GRANT ALL ON SCHEMA public TO $DB_USER;"
 
 log "Running schema migration from $INIT_SQL_PATH..."
 psql postgresql://$DB_USER:$DB_PASSWORD@localhost:5432/$DB_NAME -v ON_ERROR_STOP=1 -f "$INIT_SQL_PATH"
