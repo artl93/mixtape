@@ -3,6 +3,7 @@ import multer from 'multer';
 import pool from '../services/db';
 import path from 'path';
 import fs from 'fs';
+import { parseFile } from 'music-metadata';
 
 const router = Router();
 
@@ -34,9 +35,30 @@ router.post('/upload', upload.single('audio'), async (req: Request, res: Respons
       return res.status(400).json({ error: 'Missing required fields.' });
     }
     const fileUrl = `/uploads/${file.filename}`;
+
+    // Extract ID3 metadata from the uploaded file
+    let metadata: unknown = {};
+    try {
+      metadata = await parseFile(file.path);
+    } catch {
+      metadata = {};
+    }
+    // Flatten some common ID3 tags for easy access
+    const meta = metadata as { common?: any; format?: any };
+    const id3 = {
+      artist: meta.common?.artist || null,
+      album: meta.common?.album || null,
+      year: meta.common?.year || null,
+      genre: meta.common?.genre ? meta.common.genre.join(', ') : null,
+      duration: meta.format?.duration || null,
+      track: meta.common?.track?.no || null,
+      title: meta.common?.title || title,
+    };
+
+    // Insert into DB (add id3 fields as JSON for now)
     const result = await pool.query(
-      'INSERT INTO tracks (user_id, title, file_url) VALUES ($1, $2, $3) RETURNING *',
-      [user_id, title, fileUrl],
+      'INSERT INTO tracks (user_id, title, file_url, id3) VALUES ($1, $2, $3, $4) RETURNING *',
+      [user_id, id3.title, fileUrl, id3],
     );
     res.status(201).json({ track: result.rows[0] });
   } catch (err) {

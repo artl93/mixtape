@@ -2,6 +2,9 @@
 # run-local-ci.sh - Run the full CI workflow locally for Mixtape backend
 set -e
 
+# Clean up any old backend server logs that could interfere with mktemp or server startup
+rm -f /tmp/mixtape-backend-server.*.log
+
 # 1. Set environment variables (edit as needed)
 export POSTGRES_USER=${POSTGRES_USER:-groove_admin}
 export POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-SunsetMelody2025}

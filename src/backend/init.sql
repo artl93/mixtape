@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS tracks (
     user_id INTEGER REFERENCES users(id),
     title VARCHAR(255) NOT NULL,
     file_url TEXT NOT NULL,
+    id3 JSONB,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
