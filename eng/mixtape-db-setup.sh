@@ -5,16 +5,18 @@
 
 set -e
 
-# Load environment variables from .env if present
-if [ -f .env ]; then
-  echo "[INFO] Loading environment variables from .env file"
-  export $(grep -v '^#' .env | xargs)
+# Prefer environment variables (for CI or shell) if set, otherwise load from .env for local dev
+if [ -z "$POSTGRES_USER" ] || [ -z "$POSTGRES_PASSWORD" ] || [ -z "$POSTGRES_DB" ]; then
+  if [ -f src/backend/.env ]; then
+    echo "[INFO] Loading environment variables from src/backend/.env file"
+    export $(grep -v '^#' src/backend/.env | xargs)
+  fi
 fi
 
 # Set variables from environment or defaults
-DB_USER="${DB_USER:-mixtape_user}"
-DB_PASSWORD="${DB_PASSWORD:-yourpassword}"
-DB_NAME="${DB_NAME:-mixtape}"
+DB_USER="${POSTGRES_USER:-groove_admin}"
+DB_PASSWORD="${POSTGRES_PASSWORD:-SunsetMelody2025}"
+DB_NAME="${POSTGRES_DB:-bandmix_prod}"
 INIT_SQL_PATH="$(dirname "$0")/../src/backend/init.sql"
 
 log() {

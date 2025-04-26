@@ -1,0 +1,67 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install root dependencies
+        run: npm install
+
+      - name: Install backend dependencies
+        run: |
+          cd src/backend
+          npm install
+
+      - name: Lint backend
+        run: |
+          cd src/backend
+          npm run lint
+
+      - name: Format backend (check only)
+        run: |
+          cd src/backend
+          npx prettier --check .
+
+      - name: Type check backend
+        run: |
+          cd src/backend
+          npx tsc --noEmit
+
+      - name: Set up PostgreSQL
+        uses: Harmon758/postgresql-action@v1
+        with:
+          postgresql version: '15'
+          postgresql db: ${{ secrets.POSTGRES_DB }}
+          postgresql user: ${{ secrets.POSTGRES_USER }}
+          postgresql password: ${{ secrets.POSTGRES_PASSWORD }}
+
+      - name: Set up test database schema
+        env:
+          DB_USER: ${{ secrets.POSTGRES_USER }}
+          DB_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          DB_NAME: ${{ secrets.POSTGRES_DB }}
+        run: |
+          ./eng/mixtape-db-setup.sh
+
+      - name: Run backend tests
+        env:
+          POSTGRES_CONNECTION_STRING: postgresql://${{ secrets.POSTGRES_USER }}:${{ secrets.POSTGRES_PASSWORD }}@localhost:5432/${{ secrets.POSTGRES_DB }}
+        run: |
+          ./run-test-server.sh
+          sleep 5
+          ./test-server.sh
+          ./eng/stop-test-server.sh

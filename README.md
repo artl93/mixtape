@@ -14,6 +14,19 @@ Mixtape is a modern, scalable web application for musicians to upload, share, an
 - Start/stop the backend: `./run-test-server.sh` / `./eng/stop-test-server.sh`
 - Run end-to-end tests: `./test-server.sh`
 
+## Continuous Integration (CI)
+This project uses GitHub Actions for CI. On every push or pull request to `main`, the workflow will:
+- Install dependencies
+- Lint, format, and type-check the backend
+- Set up a PostgreSQL service
+- Run the database setup script
+- Run the full end-to-end test suite
+
+**Database credentials are managed securely using GitHub Actions secrets:**
+- `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`
+
+See the repository settings for how to configure these secrets.
+
 ## Structure
 - **Backend:** All core logic, models, and routes are in `src/backend/`.
 - **Tests:** End-to-end and integration tests in `tests/`.
