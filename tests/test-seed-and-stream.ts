@@ -70,6 +70,15 @@ async function main() {
     assert(track.title === TEST_TRACK.title, '[ASSERT] Track title should match');
     assert(track.user_id === userId, '[ASSERT] Track user_id should match');
     assert(track.file_url && typeof track.file_url === 'string', '[ASSERT] Track should have a file_url');
+    // --- ID3 metadata assertions ---
+    assert(track.id3, '[ASSERT] Track should have id3 metadata');
+    assert(typeof track.id3 === 'object', '[ASSERT] Track id3 should be an object');
+    // At least one of these should be present (artist, album, title, duration, etc.)
+    assert(
+      track.id3.artist || track.id3.album || track.id3.title || track.id3.duration,
+      '[ASSERT] At least one ID3 field should be present in id3 metadata'
+    );
+    console.log('[TEST] ID3 metadata:', track.id3);
     console.log(`[TEST] Uploaded track:`, track);
     // Download the uploaded file directly
     const downloadUrl = `http://localhost:4000${track.file_url}`;
