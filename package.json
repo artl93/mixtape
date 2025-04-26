@@ -16,5 +16,9 @@
     "form-data": "^4.0.2",
     "music-metadata": "^11.2.1",
     "pg": "^8.15.6"
+  },
+  "scripts": {
+    "lint": "eslint src/**/*.ts tests/**/*.ts",
+    "format": "prettier --write src/**/*.ts tests/**/*.ts"
   }
 }
