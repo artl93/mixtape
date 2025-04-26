@@ -41,6 +41,20 @@ log "Granting privileges on $DB_NAME to $DB_USER..."
 psql -h localhost -U "$PGADMIN_USER" -d postgres -c "GRANT ALL PRIVILEGES ON DATABASE $DB_NAME TO $DB_USER;"
 psql -h localhost -U "$PGADMIN_USER" -d postgres -c "GRANT ALL ON SCHEMA public TO $DB_USER;"
 
+# Wait for PostgreSQL to be ready (max 30s)
+for i in {1..30}; do
+  if psql -h localhost -U "$PGADMIN_USER" -d postgres -c '\q' 2>/dev/null; then
+    echo "[mixtape-db-setup] PostgreSQL is up!"
+    break
+  fi
+  echo "[mixtape-db-setup] Waiting for PostgreSQL to be ready... ($i/30)"
+  sleep 1
+  if [ "$i" -eq 30 ]; then
+    echo "[mixtape-db-setup] ERROR: PostgreSQL did not become ready in time." >&2
+    exit 1
+  fi
+done
+
 log "Running schema migration from $INIT_SQL_PATH..."
 psql postgresql://$DB_USER:$DB_PASSWORD@localhost:5432/$DB_NAME -v ON_ERROR_STOP=1 -f "$INIT_SQL_PATH"
 
