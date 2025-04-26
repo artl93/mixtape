@@ -11,12 +11,16 @@ export POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-SunsetMelody2025}
 export POSTGRES_DB=${POSTGRES_DB:-bandmix_prod}
 export POSTGRES_CONNECTION_STRING="postgresql://$POSTGRES_USER:$POSTGRES_PASSWORD@localhost:5432/$POSTGRES_DB"
 
-# 2. Start PostgreSQL (if not running)
+# 2. Start PostgreSQL (if not running, use Homebrew)
 if ! pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB" >/dev/null 2>&1; then
-  echo "[run-local-ci.sh] Starting PostgreSQL using Docker..."
-  docker run --rm -d --name mixtape-postgres -e POSTGRES_USER="$POSTGRES_USER" -e POSTGRES_PASSWORD="$POSTGRES_PASSWORD" -e POSTGRES_DB="$POSTGRES_DB" -p 5432:5432 postgres:15
-  export PG_DOCKER_STARTED=1
-  sleep 5
+  echo "[run-local-ci.sh] Starting PostgreSQL using Homebrew..."
+  if command -v brew >/dev/null 2>&1; then
+    brew services start postgresql
+    sleep 5
+  else
+    echo "[run-local-ci.sh] Homebrew not found. Please start Postgres manually."
+    exit 1
+  fi
 else
   echo "[run-local-ci.sh] PostgreSQL is already running."
 fi
@@ -43,16 +47,57 @@ sleep 5
 cd src/web
 npm install --legacy-peer-deps
 npx playwright install --with-deps
+
+# --- Start frontend server in background ---
+FRONTEND_LOG="/tmp/mixtape-frontend-server.$$.log"
+FRONTEND_PID=""
+function stop_frontend {
+  if [ -n "$FRONTEND_PID" ] && kill -0 "$FRONTEND_PID" 2>/dev/null; then
+    echo "[run-local-ci.sh] Stopping frontend server (PID $FRONTEND_PID)..."
+    kill "$FRONTEND_PID"
+    wait "$FRONTEND_PID" 2>/dev/null || true
+  fi
+}
+trap stop_frontend EXIT
+
+# Start frontend (React dev server)
+npm run dev > "$FRONTEND_LOG" 2>&1 &
+FRONTEND_PID=$!
+echo "[run-local-ci.sh] Started frontend server (PID $FRONTEND_PID), waiting for it to be ready..."
+
+# Wait for frontend to be ready (max 30s)
+for i in {1..30}; do
+  if curl -sSf http://localhost:3000 >/dev/null; then
+    echo "[run-local-ci.sh] Frontend is up!"
+    break
+  fi
+  sleep 1
+done
+if ! curl -sSf http://localhost:3000 >/dev/null; then
+  echo "[run-local-ci.sh] ERROR: Frontend did not start in time. Log output:" >&2
+  cat "$FRONTEND_LOG" >&2
+  exit 1
+fi
+
 npx playwright test
+
 cd ../..
 
 # 8. Stop backend server
 ./eng/stop-test-server.sh
 
-# 9. Stop Docker Postgres if started by this script
-if [ "$PG_DOCKER_STARTED" = "1" ]; then
-  echo "[run-local-ci.sh] Stopping Docker PostgreSQL container..."
-  docker stop mixtape-postgres
+# 9. Stop Postgres (if started by this script, Homebrew)
+if command -v brew >/dev/null 2>&1; then
+  echo "[run-local-ci.sh] Stopping PostgreSQL service (Homebrew)..."
+  brew services stop postgresql
+fi
+
+trap - EXIT
+# Kill all frontend servers on port 3000 (not just the one started by this script)
+FRONTEND_PIDS=$(lsof -ti :3000)
+if [ -n "$FRONTEND_PIDS" ]; then
+  echo "[run-local-ci.sh] Cleaning up all frontend servers on port 3000: $FRONTEND_PIDS ..."
+  kill $FRONTEND_PIDS || true
 fi
 
 echo "[run-local-ci.sh] Local CI workflow complete!"

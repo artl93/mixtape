@@ -75,11 +75,36 @@ jobs:
         working-directory: src/web
         run: npx playwright install --with-deps
 
+      - name: Start frontend dev server
+        working-directory: src/web
+        run: |
+          nohup npm run dev > /tmp/mixtape-frontend-server.ci.log 2>&1 &
+          for i in {1..30}; do
+            if curl -sSf http://localhost:3000 >/dev/null; then
+              echo "[ci.yml] Frontend is up!"
+              break
+            fi
+            sleep 1
+          done
+          if ! curl -sSf http://localhost:3000 >/dev/null; then
+            echo "[ci.yml] ERROR: Frontend did not start in time. Log output:" >&2
+            cat /tmp/mixtape-frontend-server.ci.log >&2
+            exit 1
+          fi
+
       - name: Run Playwright web UI tests
         env:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
         working-directory: src/web
         run: npx playwright test
+
+      - name: Stop frontend server
+        run: |
+          FRONTEND_PIDS=$(lsof -ti :3000)
+          if [ -n "$FRONTEND_PIDS" ]; then
+            echo "[ci.yml] Cleaning up all frontend servers on port 3000: $FRONTEND_PIDS ..."
+            kill $FRONTEND_PIDS || true
+          fi
 
       - name: Stop backend server
         run: ./eng/stop-test-server.sh
