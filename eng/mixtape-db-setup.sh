@@ -23,14 +23,18 @@ log() {
   echo "[mixtape-db-setup] $1"
 }
 
-# Allow override of admin user for PostgreSQL (default: current shell user via $USER)
-# Set PGADMIN_USER to your local superuser if needed, e.g.:
-#   PGADMIN_USER=yourlocaluser ./eng/mixtape-db-setup.sh
-# By default, PGADMIN_USER will use your current shell username ($USER).
-PGADMIN_USER="${PGADMIN_USER:-$USER}"
+# Detect if running in GitHub Actions CI
+if [ "$GITHUB_ACTIONS" = "true" ]; then
+  # In CI, always use 'postgres' as the admin user
+  PGADMIN_USER="postgres"
+else
+  # Local: allow override, default to shell user
+  PGADMIN_USER="${PGADMIN_USER:-$USER}"
+fi
 
 # Set PGADMIN_PASSWORD if provided (for CI or local superuser password)
 # Usage: PGADMIN_USER=postgres PGADMIN_PASSWORD=yourpassword ./eng/mixtape-db-setup.sh
+# In CI, PGADMIN_PASSWORD should be set to the value of POSTGRES_PASSWORD secret
 
 # Wait for PostgreSQL to be ready (max 30s)
 for i in {1..30}; do
