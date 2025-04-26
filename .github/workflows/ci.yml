@@ -51,6 +51,8 @@ jobs:
 
       - name: Set up test database schema
         env:
+          PGADMIN_USER: postgres
+          PGADMIN_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
           DB_USER: ${{ secrets.POSTGRES_USER }}
           DB_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
           DB_NAME: ${{ secrets.POSTGRES_DB }}
