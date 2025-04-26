@@ -176,4 +176,14 @@ router.get('/:id', async (req: Request, res: Response) => {
   }
 });
 
+// GET /api/tracks - List all tracks
+router.get('/', async (_req: Request, res: Response) => {
+  try {
+    const result = await pool.query('SELECT * FROM tracks ORDER BY created_at DESC');
+    res.json({ tracks: result.rows });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch tracks', details: err });
+  }
+});
+
 export default router;

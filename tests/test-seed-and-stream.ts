@@ -106,6 +106,22 @@ async function main() {
 
     // ---
 
+    // --- LIST TRACKS TEST ---
+    console.log('[TEST] Listing all tracks...');
+    const listRes = await axios.get('http://localhost:4000/api/tracks');
+    assert(listRes.status === 200, '[ASSERT] GET /api/tracks should return 200');
+    assert(Array.isArray(listRes.data.tracks), '[ASSERT] tracks should be an array');
+    assert(listRes.data.tracks.length > 0, '[ASSERT] tracks array should not be empty');
+    const found = listRes.data.tracks.find((t: { id: number; title: string }) => t.id === track.id);
+    assert(found, '[ASSERT] Uploaded track should appear in /api/tracks list');
+    assert(
+      found.title === track.title,
+      '[ASSERT] Uploaded track title matches in /api/tracks list',
+    );
+    console.log('[TEST] /api/tracks endpoint returns uploaded track with correct title.');
+
+    // ---
+
     // Download the uploaded file directly
     const downloadUrl = `http://localhost:4000${track.file_url}`;
     const downloadRes = await axios.get(downloadUrl, { responseType: 'arraybuffer' });
