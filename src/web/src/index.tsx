@@ -1,14 +1,12 @@
-import React from "react";
-import ReactDOM from "react-dom/client";
-import "./index.css";
-import App from "./App";
-import * as serviceWorkerRegistration from "./serviceWorkerRegistration";
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import './index.css';
+import App from './App';
+import * as serviceWorkerRegistration from './serviceWorkerRegistration';
 // Remove or comment out the import and usage of reportWebVitals for now to avoid web-vitals errors
 // import reportWebVitals from './reportWebVitals';
 
-const root = ReactDOM.createRoot(
-  document.getElementById("root") as HTMLElement,
-);
+const root = ReactDOM.createRoot(document.getElementById('root') as HTMLElement);
 root.render(
   <React.StrictMode>
     <App />

@@ -28,6 +28,12 @@ fi
 # 3. Install dependencies
 ./build.sh
 
+# 3.5. Run Prettier --write for backend and frontend
+npx prettier --write "src/backend/**/*.ts" "src/backend/**/*.js"
+cd src/web
+npx prettier --write 'src/**/*.{ts,tsx,css,md}'
+cd ../..
+
 # 4. Set up the database
 ./eng/mixtape-db-setup.sh
 

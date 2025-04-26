@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import axios from "axios";
+import React, { useEffect, useState } from 'react';
+import axios from 'axios';
 import {
   Container,
   Typography,
@@ -9,7 +9,7 @@ import {
   Button,
   Grid,
   CircularProgress,
-} from "@mui/material";
+} from '@mui/material';
 
 interface Track {
   id: number;
@@ -26,7 +26,7 @@ interface Track {
   };
 }
 
-const API_BASE = "http://localhost:4000";
+const API_BASE = 'http://localhost:4000';
 
 export default function App() {
   const [tracks, setTracks] = useState<Track[]>([]);
@@ -42,7 +42,7 @@ export default function App() {
         setLoading(false);
       })
       .catch((err) => {
-        setError("Failed to load tracks");
+        setError('Failed to load tracks');
         setLoading(false);
       });
   }, []);
@@ -64,19 +64,19 @@ export default function App() {
                 <CardContent>
                   <Typography variant="h6">{track.title}</Typography>
                   <Typography variant="body2" color="text.secondary">
-                    {track.id3?.artist || "Unknown Artist"}
+                    {track.id3?.artist || 'Unknown Artist'}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    {track.id3?.album || "Unknown Album"}
+                    {track.id3?.album || 'Unknown Album'}
                   </Typography>
                 </CardContent>
                 <CardActions>
                   <Button
                     size="small"
                     onClick={() => setPlayingId(track.id)}
-                    variant={playingId === track.id ? "contained" : "outlined"}
+                    variant={playingId === track.id ? 'contained' : 'outlined'}
                   >
-                    {playingId === track.id ? "Playing" : "Play"}
+                    {playingId === track.id ? 'Playing' : 'Play'}
                   </Button>
                   <Button
                     size="small"
@@ -93,7 +93,7 @@ export default function App() {
                     controls
                     autoPlay
                     onEnded={() => setPlayingId(null)}
-                    style={{ width: "100%" }}
+                    style={{ width: '100%' }}
                   />
                 )}
               </Card>
