@@ -27,10 +27,10 @@ fi
 # 4. Set up the database
 ./eng/mixtape-db-setup.sh
 
-# 5. Lint, format, and type-check backend
-cd src/backend
+# 5. Lint, format, and type-check backend (run from root)
 npm run lint
 npm run format
+cd src/backend
 npx tsc --noEmit
 cd ../..
 

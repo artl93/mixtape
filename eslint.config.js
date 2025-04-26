@@ -11,7 +11,7 @@
 /** @type {import('eslint').Linter.FlatConfig[]} */
 module.exports = [
   {
-    files: ['**/*.ts'],
+    files: ['src/**/*.ts', 'tests/**/*.ts'],
     languageOptions: {
       ecmaVersion: 2021,
       sourceType: 'module',
