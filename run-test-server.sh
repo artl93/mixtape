@@ -17,5 +17,8 @@ log() {
 
 log "Starting backend server on port $PORT (NODE_ENV=$NODE_ENV)..."
 cd src/backend
-nohup bash -c "PORT=\"$PORT\" NODE_ENV=\"$NODE_ENV\" npm run dev" > ../../backend-server.log 2>&1 &
+# Write server log to a temp file instead of a git-tracked location
+SERVER_LOG=$(mktemp /tmp/mixtape-backend-server.XXXXXX.log)
+nohup bash -c "PORT=\"$PORT\" NODE_ENV=\"$NODE_ENV\" npm run dev" > "$SERVER_LOG" 2>&1 &
 log "Backend server started in background (PID: $!)"
+log "Server log: $SERVER_LOG"
