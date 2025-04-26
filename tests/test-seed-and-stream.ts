@@ -7,7 +7,6 @@ import dotenv from 'dotenv';
 import assert from 'assert';
 import nodeID3 from 'node-id3';
 
-
 dotenv.config({ path: path.resolve(__dirname, '../src/backend/.env') });
 
 const DB_CONN =
@@ -72,6 +71,8 @@ async function main() {
       }
     }
 
+    // ---
+
     console.log('[TEST] Seeding user...');
     const userId = await seedUser();
     assert(
@@ -79,6 +80,9 @@ async function main() {
       '[ASSERT] User ID should be a positive number',
     );
     console.log(`[TEST] User ID: ${userId}`);
+
+    // ---
+
     console.log('[TEST] Uploading track...');
     const track = await uploadTrack(userId);
     assert(track && track.id, '[ASSERT] Track should have an id');
@@ -99,11 +103,17 @@ async function main() {
     );
     console.log('[TEST] ID3 metadata:', track.id3);
     console.log(`[TEST] Uploaded track:`, track);
+
+    // ---
+
     // Download the uploaded file directly
     const downloadUrl = `http://localhost:4000${track.file_url}`;
     const downloadRes = await axios.get(downloadUrl, { responseType: 'arraybuffer' });
     assert(downloadRes.status === 200, '[ASSERT] Download should return 200');
     assert(downloadRes.data.byteLength > 0, '[ASSERT] Downloaded file should not be empty');
+
+    // ---
+
     // Stream the file using the streaming endpoint
     console.log('[TEST] Streaming track back...');
     const streamedPath = await streamTrack(track.file_url.split('/').pop()!);
@@ -121,6 +131,7 @@ async function main() {
     assert(origBuf.equals(streamedBuf), '[ASSERT] Streamed file content should match original');
 
     // --- PATCH/EDIT METADATA TEST ---
+
     console.log('[TEST] Editing track metadata...');
     // 1. Read original
     const getRes1 = await axios.get(`http://localhost:4000/api/tracks/${track.id}`);
@@ -128,6 +139,9 @@ async function main() {
     const origTitle = getRes1.data.track.title;
     const origArtist = getRes1.data.track.id3?.artist;
     const origAlbum = getRes1.data.track.id3?.album;
+
+    // ---
+
     // 2. Edit to popular values
     const newTitle = 'Bohemian Rhapsody';
     const newArtist = 'Queen';
@@ -140,6 +154,9 @@ async function main() {
     assert(patchRes.data.track.title === newTitle, '[ASSERT] PATCH updates title');
     assert(patchRes.data.track.id3.artist === newArtist, '[ASSERT] PATCH updates artist');
     assert(patchRes.data.track.id3.album === newAlbum, '[ASSERT] PATCH updates album');
+
+    // ---
+
     // 3. Read again and verify changes
     const getRes2 = await axios.get(`http://localhost:4000/api/tracks/${track.id}`);
     assert(getRes2.status === 200, '[ASSERT] GET after PATCH should return 200');
@@ -152,6 +169,8 @@ async function main() {
     assert(getRes2.data.track.title !== origTitle, '[ASSERT] Title actually changed');
     assert(getRes2.data.track.id3.artist !== origArtist, '[ASSERT] Artist actually changed');
     assert(getRes2.data.track.id3.album !== origAlbum, '[ASSERT] Album actually changed');
+
+    // ---
 
     // --- DOWNLOAD ID3 METADATA TEST: after first PATCH ---
     console.log('\n[TEST] Downloading after first metadata edit...');
@@ -166,6 +185,8 @@ async function main() {
     assert(tags1.artist === newArtist, '[ASSERT] Downloaded file ID3 artist matches DB');
     assert(tags1.album === newAlbum, '[ASSERT] Downloaded file ID3 album matches DB');
 
+    // ---
+
     // 4. Edit again to another set
     const newTitle2 = 'Imagine';
     const newArtist2 = 'John Lennon';
@@ -178,6 +199,9 @@ async function main() {
     assert(patchRes2.data.track.title === newTitle2, '[ASSERT] PATCH 2 updates title');
     assert(patchRes2.data.track.id3.artist === newArtist2, '[ASSERT] PATCH 2 updates artist');
     assert(patchRes2.data.track.id3.album === newAlbum2, '[ASSERT] PATCH 2 updates album');
+
+    // ---
+
     // 5. Read again and verify changes
     const getRes3 = await axios.get(`http://localhost:4000/api/tracks/${track.id}`);
     assert(getRes3.status === 200, '[ASSERT] GET after PATCH 2 should return 200');
@@ -190,6 +214,8 @@ async function main() {
       getRes3.data.track.id3.album === newAlbum2,
       '[ASSERT] GET after PATCH 2 returns new album',
     );
+
+    // ---
 
     // --- DOWNLOAD ID3 METADATA TEST: after second PATCH ---
     console.log('\n[TEST] Downloading after second metadata edit...');
@@ -214,6 +240,8 @@ async function main() {
     );
     console.log('\n[TEST] Download ID3 metadata checks complete.');
 
+    // ---
+
     // --- DELETE endpoint test ---
     console.log('[TEST] Deleting track...');
     const deleteRes = await axios.delete(`http://localhost:4000/api/tracks/${track.id}`);
@@ -233,6 +261,9 @@ async function main() {
     // Track should be deleted from DB
     const dbCheck = await pool.query('SELECT * FROM tracks WHERE id = $1', [track.id]);
     assert(dbCheck.rowCount === 0, '[ASSERT] Track should be deleted from database');
+
+    // ---
+
     // Streaming should return 404
     function isAxiosError404(err: unknown): boolean {
       return (
@@ -250,6 +281,9 @@ async function main() {
       if (isAxiosError404(err)) stream404 = true;
     }
     assert(stream404, '[ASSERT] Streaming deleted file should return 404');
+
+    // ---
+
     // Download should return 404
     let download404 = false;
     try {
