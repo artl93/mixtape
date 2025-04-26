@@ -3,6 +3,7 @@
 This is the backend service for the Mixtape project. It is built with Node.js, TypeScript, Express, and PostgreSQL. Audio files are stored locally under `_server-data/uploads/` (for dev/testing), with future support for Azure Blob Storage. All backend features are automated and ready for integration with a frontend.
 
 ## Features
+
 - User authentication (Google Identity, coming soon)
 - Audio upload, streaming, and delete (local disk, Azure Blob in future)
 - PostgreSQL database (local or Azure)
@@ -34,6 +35,7 @@ This is the backend service for the Mixtape project. It is built with Node.js, T
    ```
 
 ## Project Structure
+
 - `app.ts` - Main Express app
 - `migrate.ts` - DB migration script
 - `models/` - Data models (user, track, playlist, comment)
@@ -44,9 +46,11 @@ This is the backend service for the Mixtape project. It is built with Node.js, T
 - `uploads/` - (legacy, not used; see `_server-data/uploads/`)
 
 ## Environment Variables
+
 - `POSTGRES_CONNECTION_STRING` - PostgreSQL connection string
 - `PORT` - Port to run the server (default: 4000)
 - See project root README for more details
 
 ---
+
 All file storage is under `_server-data/uploads/` (gitignored). See project root README for full workflow and automation details.

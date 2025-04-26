@@ -36,7 +36,7 @@ router.post('/upload', upload.single('audio'), async (req: Request, res: Respons
     const fileUrl = `/uploads/${file.filename}`;
     const result = await pool.query(
       'INSERT INTO tracks (user_id, title, file_url) VALUES ($1, $2, $3) RETURNING *',
-      [user_id, title, fileUrl]
+      [user_id, title, fileUrl],
     );
     res.status(201).json({ track: result.rows[0] });
   } catch (err) {
