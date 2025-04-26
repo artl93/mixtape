@@ -4,7 +4,9 @@
   "main": "dist/app.js",
   "scripts": {
     "dev": "ts-node-dev --respawn app.ts",
-    "build": "tsc",
+    "lint": "eslint . --ext .ts",
+    "format": "prettier --write .",
+    "build": "npm run lint && npm run format && tsc",
     "start": "node dist/app.js"
   },
   "dependencies": {
