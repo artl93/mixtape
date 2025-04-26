@@ -32,7 +32,13 @@ fi
 ./eng/mixtape-db-setup.sh
 
 # 5. Lint, format, and type-check backend (run from root)
-npm run lint
+echo "[run-local-ci.sh] Running lint..."
+if ! npm run lint; then
+  echo "[run-local-ci.sh] ERROR: Linting failed. See output above."
+  exit 1
+fi
+echo "[run-local-ci.sh] Lint passed."
+
 npm run format
 cd src/backend
 npx tsc --noEmit
