@@ -1,0 +1,30 @@
+# Node.js
+node_modules/
+dist/
+
+# Environment variables
+.env
+.env.*
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+
+# VSCode
+.vscode/
+
+# macOS
+.DS_Store
+
+# Test coverage
+coverage/
+
+# Misc
+*.local
+*.sublime-workspace
+*.sublime-project
+
+# Temporary files
+tmp/
+_server-data/
+tests/streamed/

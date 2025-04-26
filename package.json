@@ -1,0 +1,13 @@
+{
+  "devDependencies": {
+    "@types/pg": "^8.11.14",
+    "ts-node": "^10.9.2"
+  },
+  "dependencies": {
+    "assert": "^2.1.0",
+    "axios": "^1.9.0",
+    "dotenv": "^16.5.0",
+    "form-data": "^4.0.2",
+    "pg": "^8.15.6"
+  }
+}
