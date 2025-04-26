@@ -78,14 +78,16 @@ export default function App() {
                   >
                     {playingId === track.id ? 'Playing' : 'Play'}
                   </Button>
-                  <Button
-                    size="small"
+                  {/* Use a real <a> tag with download attribute for browser compatibility */}
+                  <a
                     href={`${API_BASE}${track.file_url}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                    download
+                    style={{ textDecoration: 'none' }}
                   >
-                    Download
-                  </Button>
+                    <Button size="small" component="span">
+                      Download
+                    </Button>
+                  </a>
                 </CardActions>
                 {playingId === track.id && (
                   <audio
