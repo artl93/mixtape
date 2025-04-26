@@ -28,3 +28,4 @@ coverage/
 tmp/
 _server-data/
 tests/streamed/
+test-results

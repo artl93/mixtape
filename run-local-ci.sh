@@ -38,9 +38,18 @@ cd ../..
 ./run-test-server.sh
 sleep 5
 ./test-server.sh
+
+# 7. Run web frontend Playwright tests
+cd src/web
+npm install --legacy-peer-deps
+npx playwright install --with-deps
+npx playwright test
+cd ../..
+
+# 8. Stop backend server
 ./eng/stop-test-server.sh
 
-# 7. Stop Docker Postgres if started by this script
+# 9. Stop Docker Postgres if started by this script
 if [ "$PG_DOCKER_STARTED" = "1" ]; then
   echo "[run-local-ci.sh] Stopping Docker PostgreSQL container..."
   docker stop mixtape-postgres

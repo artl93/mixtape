@@ -66,4 +66,24 @@ jobs:
           ./run-test-server.sh
           sleep 5
           ./test-server.sh
-          ./eng/stop-test-server.sh
+
+      - name: Install frontend dependencies
+        run: |
+          cd src/web
+          npm install --legacy-peer-deps
+
+      - name: Install Playwright browsers
+        run: |
+          cd src/web
+          npx playwright install --with-deps
+
+      - name: Run Playwright web UI tests
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
+        run: |
+          cd src/web
+          npx playwright test
+          cd ../..
+
+      - name: Stop backend server
+        run: ./eng/stop-test-server.sh
