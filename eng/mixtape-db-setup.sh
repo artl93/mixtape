@@ -25,16 +25,14 @@ log() {
 
 # Detect if running in GitHub Actions CI
 if [ "$GITHUB_ACTIONS" = "true" ]; then
-  # In CI, always use 'postgres' as the admin user
-  PGADMIN_USER="postgres"
+  # In CI, use the app user for all operations (superuser is not available)
+  PGADMIN_USER="$DB_USER"
+  PGADMIN_PASSWORD="$DB_PASSWORD"
 else
   # Local: allow override, default to shell user
   PGADMIN_USER="${PGADMIN_USER:-$USER}"
+  PGADMIN_PASSWORD="${PGADMIN_PASSWORD:-}"
 fi
-
-# Set PGADMIN_PASSWORD if provided (for CI or local superuser password)
-# Usage: PGADMIN_USER=postgres PGADMIN_PASSWORD=yourpassword ./eng/mixtape-db-setup.sh
-# In CI, PGADMIN_PASSWORD should be set to the value of POSTGRES_PASSWORD secret
 export PGPASSWORD="$PGADMIN_PASSWORD"
 
 # Wait for PostgreSQL to be ready (max 30s)
