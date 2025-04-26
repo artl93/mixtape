@@ -15,6 +15,7 @@ module.exports = [
     languageOptions: {
       ecmaVersion: 2021,
       sourceType: "module",
+      parser: require("@typescript-eslint/parser"),
     },
     plugins: {
       "@typescript-eslint": require("@typescript-eslint/eslint-plugin"),
@@ -25,6 +26,5 @@ module.exports = [
       "no-console": "off",
     },
     ignores: ["node_modules/", "dist/", "_server-data/", "tests/streamed/"],
-    parser: require.resolve("@typescript-eslint/parser"),
   },
 ];
