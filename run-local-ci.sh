@@ -39,6 +39,13 @@ if ! npm run lint; then
 fi
 echo "[run-local-ci.sh] Lint passed."
 
+echo "[run-local-ci.sh] Running Prettier (format check only)..."
+if ! npx prettier --check src/**/*.ts; then
+  echo "[run-local-ci.sh] ERROR: Prettier formatting errors detected. Run 'npx prettier --write src/**/*.ts' to fix."
+  exit 1
+fi
+echo "[run-local-ci.sh] Prettier formatting passed."
+
 npm run format
 cd src/backend
 npx tsc --noEmit

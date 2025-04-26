@@ -50,9 +50,12 @@ router.post('/upload', upload.single('audio'), async (req: Request, res: Respons
       artist: meta.common?.artist || null,
       album: meta.common?.album || null,
       year: meta.common?.year || null,
-      genre: Array.isArray(meta.common?.genre) ? meta.common.genre.join(', ') : meta.common?.genre || null,
+      genre: Array.isArray(meta.common?.genre)
+        ? meta.common.genre.join(', ')
+        : meta.common?.genre || null,
       duration: meta.format?.duration || null,
-      track: meta.common?.track && typeof meta.common.track === 'object' ? meta.common.track.no : null,
+      track:
+        meta.common?.track && typeof meta.common.track === 'object' ? meta.common.track.no : null,
       title: meta.common?.title || title,
     };
 
