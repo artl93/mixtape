@@ -1,4 +1,5 @@
 import React, { useRef, useState } from 'react';
+import { Paper, Button, useTheme, Box } from '@mui/material';
 
 interface UploadTrackProps {
   onUploadSuccess?: (track: any) => void;
@@ -6,6 +7,7 @@ interface UploadTrackProps {
 }
 
 const UploadTrack: React.FC<UploadTrackProps> = ({ onUploadSuccess, apiBase }) => {
+  const theme = useTheme();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [dragActive, setDragActive] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -69,7 +71,8 @@ const UploadTrack: React.FC<UploadTrackProps> = ({ onUploadSuccess, apiBase }) =
   };
 
   return (
-    <div
+    <Paper
+      elevation={dragActive ? 6 : 2}
       onDragOver={(e) => {
         e.preventDefault();
         setDragActive(true);
@@ -79,14 +82,28 @@ const UploadTrack: React.FC<UploadTrackProps> = ({ onUploadSuccess, apiBase }) =
         setDragActive(false);
       }}
       onDrop={handleDrop}
-      style={{
-        border: dragActive ? '2px solid #1976d2' : '2px dashed #aaa',
-        borderRadius: 8,
-        padding: 24,
+      sx={{
+        border: dragActive
+          ? `2px solid ${theme.palette.primary.main}`
+          : `2px dashed ${theme.palette.divider}`,
+        borderRadius: 2,
+        p: 0,
         textAlign: 'center',
-        background: dragActive ? '#e3f2fd' : '#fafafa',
+        bgcolor: dragActive
+          ? theme.palette.mode === 'dark'
+            ? theme.palette.action.selected
+            : theme.palette.primary.light
+          : theme.palette.background.paper,
         position: 'relative',
-        margin: '16px 0',
+        my: 2,
+        transition: 'background 0.2s, border 0.2s',
+        height: 160,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        maxWidth: 520,
+        mx: 'auto',
       }}
     >
       <input
@@ -97,27 +114,34 @@ const UploadTrack: React.FC<UploadTrackProps> = ({ onUploadSuccess, apiBase }) =
         onChange={handleInputChange}
         disabled={uploading}
       />
-      <button
-        type="button"
+      <Button
+        variant="outlined"
+        color="primary"
         onClick={handleButtonClick}
         disabled={uploading}
-        style={{
+        sx={{
+          width: 56,
+          height: 56,
+          minWidth: 0,
+          minHeight: 0,
+          borderRadius: '50%',
+          mb: 1,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
           fontSize: 32,
-          border: 'none',
-          background: 'none',
-          cursor: 'pointer',
-          color: '#1976d2',
+          p: 0,
         }}
         aria-label="Upload audio track"
       >
         +
-      </button>
-      <div style={{ marginTop: 8, color: '#555' }}>
+      </Button>
+      <Box sx={{ mt: 1, color: theme.palette.text.secondary, fontSize: 18 }}>
         Drag & drop an audio file here, or click + to select
-      </div>
-      {uploading && <div style={{ marginTop: 12 }}>Uploading... {progress}%</div>}
-      {error && <div style={{ color: 'red', marginTop: 12 }}>{error}</div>}
-    </div>
+      </Box>
+      {uploading && <Box sx={{ mt: 2 }}>{`Uploading... ${progress}%`}</Box>}
+      {error && <Box sx={{ color: theme.palette.error.main, mt: 2 }}>{error}</Box>}
+    </Paper>
   );
 };
 
