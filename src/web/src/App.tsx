@@ -1,9 +1,25 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import axios from 'axios';
-import { Container, Typography, Grid, CircularProgress } from '@mui/material';
+import {
+  Container,
+  Typography,
+  Grid,
+  CircularProgress,
+  ThemeProvider,
+  createTheme,
+  useMediaQuery,
+  CssBaseline,
+  AppBar,
+  Toolbar,
+  Select,
+  MenuItem,
+  Box,
+  List,
+} from '@mui/material';
 import TrackCard from './components/TrackCard';
 import DeleteDialog from './components/DeleteDialog';
 import UploadTrack from './components/UploadTrack';
+import BottomPlayerBar from './components/BottomPlayerBar';
 
 interface Track {
   id: number;
@@ -33,7 +49,31 @@ export function getApiBase(): string {
   return 'http://localhost:4000';
 }
 
+// eslint-disable-next-line @typescript-eslint/no-empty-function
+const noop = (..._args: any[]) => undefined;
+
 export default function App() {
+  // Theme state: 'light', 'dark', or 'system'
+  const [themeMode, setThemeMode] = useState<'light' | 'dark' | 'system'>(
+    () => (localStorage.getItem('themeMode') as 'light' | 'dark' | 'system') || 'system',
+  );
+  // Detect system dark mode
+  const prefersDark = useMediaQuery('(prefers-color-scheme: dark)');
+  const resolvedMode = themeMode === 'system' ? (prefersDark ? 'dark' : 'light') : themeMode;
+  useEffect(() => {
+    localStorage.setItem('themeMode', themeMode);
+  }, [themeMode]);
+  const theme = useMemo(
+    () =>
+      createTheme({
+        palette: { mode: resolvedMode },
+        components: {
+          MuiCard: { styleOverrides: { root: { borderRadius: 12, marginBottom: 8 } } },
+        },
+      }),
+    [resolvedMode],
+  );
+
   const [tracks, setTracks] = useState<Track[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -42,6 +82,8 @@ export default function App() {
   const [editFields, setEditFields] = useState<any>({});
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [playerTrack, setPlayerTrack] = useState<Track | null>(null);
+  const [playerPlaying, setPlayerPlaying] = useState(false);
 
   useEffect(() => {
     axios
@@ -129,57 +171,88 @@ export default function App() {
   };
 
   return (
-    <Container maxWidth="md" sx={{ mt: 4 }}>
-      <Typography variant="h3" gutterBottom>
-        Mixtape: All Tracks
-      </Typography>
-      <UploadTrack onUploadSuccess={handleUploadSuccess} apiBase={getApiBase()} />
-      {loading ? (
-        <CircularProgress />
-      ) : error ? (
-        <Typography color="error">{error}</Typography>
-      ) : (
-        <>
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <AppBar position="static" color="default" elevation={0} sx={{ mb: 2 }}>
+        <Toolbar>
+          <Typography variant="h5" sx={{ flexGrow: 1 }}>
+            Mixtape
+          </Typography>
+          <Box sx={{ minWidth: 120 }}>
+            <Select
+              size="small"
+              value={themeMode}
+              onChange={(e) => setThemeMode(e.target.value as any)}
+              sx={{ fontSize: 14 }}
+              aria-label="Theme mode"
+            >
+              <MenuItem value="light">Light</MenuItem>
+              <MenuItem value="dark">Dark</MenuItem>
+              <MenuItem value="system">System</MenuItem>
+            </Select>
+          </Box>
+        </Toolbar>
+      </AppBar>
+      <Container maxWidth="md" sx={{ mt: 2 }}>
+        <UploadTrack onUploadSuccess={handleUploadSuccess} apiBase={getApiBase()} />
+        <List sx={{ width: '100%', bgcolor: 'background.paper', borderRadius: 2, boxShadow: 1 }}>
           <DeleteDialog
             open={confirmOpen}
             onCancel={() => setConfirmOpen(false)}
             onDelete={() => handleDelete(deleteId!)}
           />
-          <Grid container spacing={2}>
-            {tracks.map((track) => (
-              <Grid item xs={12} md={6} key={track.id}>
-                <TrackCard
-                  track={track}
-                  playingId={playingId}
-                  editId={editId}
-                  editFields={editFields}
-                  onPlay={(id) => setPlayingId(id)}
-                  onEdit={(t) => {
-                    setEditId(t.id);
-                    setEditFields({
-                      title: t.title,
-                      artist: t.id3?.artist || '',
-                      album: t.id3?.album || '',
-                      track: t.id3?.track || '',
-                    });
-                  }}
-                  onEditChange={handleEditChange}
-                  onEditSave={handleEditSave}
-                  onEditCancel={handleEditCancel}
-                  onDeleteRequest={(id) => {
-                    if (playingId === id) setPlayingId(null); // stop playback immediately when delete is requested
-                    setDeleteId(id);
-                    setConfirmOpen(true);
-                  }}
-                  onKeyDown={handleCardKeyDown}
-                  API_BASE={getApiBase()}
-                  onRequestStopPlaying={() => setPlayingId(null)}
-                />
-              </Grid>
-            ))}
-          </Grid>
-        </>
-      )}
-    </Container>
+          {tracks.map((track) => (
+            <TrackCard
+              key={track.id}
+              track={track}
+              playingId={
+                playerTrack && playerTrack.id === track.id && playerPlaying ? track.id : null
+              }
+              editId={editId}
+              editFields={editFields}
+              onPlay={(id) => {
+                if (id === null) {
+                  setPlayerPlaying(false);
+                } else {
+                  const t = tracks.find((t) => t.id === id);
+                  if (t) {
+                    setPlayerTrack(t);
+                    setPlayerPlaying(true);
+                  }
+                }
+              }}
+              onEdit={(t) => {
+                setEditId(t.id);
+                setEditFields({
+                  title: t.title,
+                  artist: t.id3?.artist || '',
+                  album: t.id3?.album || '',
+                  track: t.id3?.track || '',
+                });
+              }}
+              onEditChange={handleEditChange}
+              onEditSave={handleEditSave}
+              onEditCancel={handleEditCancel}
+              onDeleteRequest={(id) => {
+                if (playerTrack && playerTrack.id === id) setPlayerPlaying(false);
+                setDeleteId(id);
+                setConfirmOpen(true);
+              }}
+              onKeyDown={handleCardKeyDown}
+              API_BASE={getApiBase()}
+              onRequestStopPlaying={() => setPlayerPlaying(false)}
+            />
+          ))}
+        </List>
+      </Container>
+      <BottomPlayerBar
+        track={playerTrack}
+        playing={playerPlaying}
+        onPlayPause={() => setPlayerPlaying((p) => !p)}
+        onSeek={noop}
+        onEnded={() => setPlayerPlaying(false)}
+        API_BASE={getApiBase()}
+      />
+    </ThemeProvider>
   );
 }
