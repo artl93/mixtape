@@ -32,27 +32,27 @@ test.describe('Mixtape Web UI', () => {
     const tempUploadPath = path.join(testTmpDir, uniqueFileName);
     fs.copyFileSync(testFilePath, tempUploadPath);
 
-    // Upload the file using the UI
-    const uploadInput = page.locator('input[type="file"]');
-    await uploadInput.setInputFiles(tempUploadPath);
+    try {
+      // Upload the file using the UI
+      const uploadInput = page.locator('input[type="file"]');
+      await uploadInput.setInputFiles(tempUploadPath);
 
-    // Wait for upload to finish and card to appear
-    const expectedTitle = uniqueBase; // UI uses file name (without extension) as title
-    const trackCard = page.locator('[data-testid="track-card"]').filter({ hasText: expectedTitle });
-    await expect(trackCard).toBeVisible({ timeout: 15000 });
+      // Wait for upload to finish and card to appear
+      const expectedTitle = uniqueBase; // UI uses file name (without extension) as title
+      const trackCard = page.locator('[data-testid="track-card"]').filter({ hasText: expectedTitle });
+      await expect(trackCard).toBeVisible({ timeout: 15000 });
 
-    // Hover over the card to reveal action buttons
-    await trackCard.hover();
+      // Hover over the card to reveal action buttons
+      await trackCard.hover();
 
-    // Delete the uploaded track using the UI
-    const deleteButton = trackCard.getByRole('button', { name: /delete/i });
-    await deleteButton.click();
-    // Confirm in dialog
-    const confirmButton = page.getByRole('button', { name: /delete/i, exact: true });
-    await confirmButton.click();
-    // Ensure the card disappears
-    await expect(trackCard).toHaveCount(0, { timeout: 10000 });
-
+      // Delete the uploaded track using the UI
+      const deleteButton = trackCard.getByRole('button', { name: /delete/i });
+      await deleteButton.click();
+      // Confirm in dialog
+      const confirmButton = page.getByRole('button', { name: /delete/i, exact: true });
+      await confirmButton.click();
+      // Ensure the card disappears
+      await expect(trackCard).toHaveCount(0, { timeout: 10000 });
     } finally {
       // Clean up temp file
       fs.unlinkSync(tempUploadPath);
