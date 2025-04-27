@@ -53,8 +53,10 @@ test.describe('Mixtape Web UI', () => {
     // Ensure the card disappears
     await expect(trackCard).toHaveCount(0, { timeout: 10000 });
 
-    // Clean up temp file
-    fs.unlinkSync(tempUploadPath);
+    } finally {
+      // Clean up temp file
+      fs.unlinkSync(tempUploadPath);
+    }
   });
 
   test('should play (stream) a track uploaded via the UI', async ({ page, browserName }) => {
