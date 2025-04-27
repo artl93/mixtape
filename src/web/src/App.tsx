@@ -67,7 +67,7 @@ export default function App() {
         track: track.id3?.track || '',
       });
       e.preventDefault();
-    } else if (e.key === 'Delete') {
+    } else if (e.key.toLowerCase() === 'delete') {
       setDeleteId(track.id);
       setConfirmOpen(true);
       e.preventDefault();
