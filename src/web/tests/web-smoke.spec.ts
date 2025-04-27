@@ -210,3 +210,5 @@ test.describe('Mixtape Web UI', () => {
     }
   });
 });
+// Note: The test for the global player bar is not included here as it requires more complex interactions and state management.
+// It can be added as a separate test case if needed.
