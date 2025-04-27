@@ -3,6 +3,7 @@ import axios from 'axios';
 import { Container, Typography, Grid, CircularProgress } from '@mui/material';
 import TrackCard from './components/TrackCard';
 import DeleteDialog from './components/DeleteDialog';
+import UploadTrack from './components/UploadTrack';
 
 interface Track {
   id: number;
@@ -111,11 +112,17 @@ export default function App() {
     }
   };
 
+  // Add upload handler
+  const handleUploadSuccess = (newTrack: Track) => {
+    setTracks((prev) => [newTrack, ...prev]);
+  };
+
   return (
     <Container maxWidth="md" sx={{ mt: 4 }}>
       <Typography variant="h3" gutterBottom>
         Mixtape: All Tracks
       </Typography>
+      <UploadTrack onUploadSuccess={handleUploadSuccess} />
       {loading ? (
         <CircularProgress />
       ) : error ? (
