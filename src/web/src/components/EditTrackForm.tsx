@@ -15,6 +15,7 @@ const EditTrackForm: React.FC<EditTrackFormProps> = ({ fields, onChange }) => (
   <>
     <TextField
       label="Title"
+      inputProps={{ 'data-testid': 'edit-title' }}
       value={fields.title}
       onChange={(e) => onChange('title', e.target.value)}
       fullWidth
@@ -23,6 +24,7 @@ const EditTrackForm: React.FC<EditTrackFormProps> = ({ fields, onChange }) => (
     />
     <TextField
       label="Artist"
+      inputProps={{ 'data-testid': 'edit-artist' }}
       value={fields.artist}
       onChange={(e) => onChange('artist', e.target.value)}
       fullWidth
@@ -30,6 +32,7 @@ const EditTrackForm: React.FC<EditTrackFormProps> = ({ fields, onChange }) => (
     />
     <TextField
       label="Album"
+      inputProps={{ 'data-testid': 'edit-album' }}
       value={fields.album}
       onChange={(e) => onChange('album', e.target.value)}
       fullWidth
@@ -37,6 +40,7 @@ const EditTrackForm: React.FC<EditTrackFormProps> = ({ fields, onChange }) => (
     />
     <TextField
       label="Track #"
+      inputProps={{ 'data-testid': 'edit-track' }}
       value={fields.track}
       onChange={(e) => onChange('track', e.target.value)}
       fullWidth
