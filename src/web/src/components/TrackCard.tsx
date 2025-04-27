@@ -97,7 +97,11 @@ const TrackCard: React.FC<TrackCardProps> = ({
         }}
         onKeyDown={handleKeyDown}
         onFocus={() => setShowActions(true)}
-        onBlur={() => setShowActions(false)}
+        onBlur={(e) => {
+          if (!e.currentTarget.contains(e.relatedTarget)) {
+            setShowActions(false);
+          }
+        }}
         tabIndex={0}
       >
         <ListItemAvatar>
