@@ -127,7 +127,7 @@ const TrackCard: React.FC<TrackCardProps> = ({
                   if (e.key === 'Escape') onEditCancel();
                 }}
                 sx={{ minWidth: 120, flex: 2 }}
-                inputProps={{ 'aria-label': 'Edit title' }}
+                inputProps={{ 'aria-label': 'Edit title', 'data-testid': 'edit-title' }}
                 autoFocus
               />
               <TextField
@@ -139,7 +139,7 @@ const TrackCard: React.FC<TrackCardProps> = ({
                   if (e.key === 'Escape') onEditCancel();
                 }}
                 sx={{ minWidth: 100, flex: 1 }}
-                inputProps={{ 'aria-label': 'Edit artist' }}
+                inputProps={{ 'aria-label': 'Edit artist', 'data-testid': 'edit-artist' }}
               />
               <TextField
                 variant="standard"
@@ -150,7 +150,7 @@ const TrackCard: React.FC<TrackCardProps> = ({
                   if (e.key === 'Escape') onEditCancel();
                 }}
                 sx={{ minWidth: 100, flex: 1 }}
-                inputProps={{ 'aria-label': 'Edit album' }}
+                inputProps={{ 'aria-label': 'Edit album', 'data-testid': 'edit-album' }}
               />
               <TextField
                 variant="standard"
@@ -161,7 +161,11 @@ const TrackCard: React.FC<TrackCardProps> = ({
                   if (e.key === 'Escape') onEditCancel();
                 }}
                 sx={{ width: 60 }}
-                inputProps={{ 'aria-label': 'Edit track number', type: 'number' }}
+                inputProps={{
+                  'aria-label': 'Edit track number',
+                  'data-testid': 'edit-track',
+                  type: 'number',
+                }}
               />
             </>
           ) : (
