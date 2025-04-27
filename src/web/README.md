@@ -50,3 +50,25 @@ npx playwright test tests/web-smoke.spec.ts
 ```
 
 Test results and artifacts will be output to the `test-results/` directory.
+
+## API Base URL Configuration
+
+The frontend no longer hardcodes the backend API URL. Instead, it determines the API base URL in this order:
+
+1. If the server injects a global variable (in `public/index.html` or via HTTP):
+   ```html
+   <script>window.__MIXTAPE_API_BASE__ = "https://your-backend.example.com";</script>
+   ```
+2. If the environment variable `REACT_APP_API_BASE` is set at build time:
+   ```sh
+   REACT_APP_API_BASE=https://your-backend.example.com npm start
+   ```
+3. Defaults to `http://localhost:4000` if neither is set.
+
+This allows you to deploy the frontend anywhere and point it to any backend without code changes.
+
+## File Uploads
+- Audio uploads are performed via the web UI using the configured API base URL.
+- No backend URL is embedded in the HTML or JavaScript bundle.
+
+---
