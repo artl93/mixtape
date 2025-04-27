@@ -2,11 +2,10 @@ import React, { useRef, useState } from 'react';
 
 interface UploadTrackProps {
   onUploadSuccess?: (track: any) => void;
+  apiBase: string;
 }
 
-const API_BASE = 'http://localhost:4000';
-
-const UploadTrack: React.FC<UploadTrackProps> = ({ onUploadSuccess }) => {
+const UploadTrack: React.FC<UploadTrackProps> = ({ onUploadSuccess, apiBase }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [dragActive, setDragActive] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -31,7 +30,7 @@ const UploadTrack: React.FC<UploadTrackProps> = ({ onUploadSuccess }) => {
     formData.append('user_id', user_id);
     try {
       const xhr = new XMLHttpRequest();
-      xhr.open('POST', `${API_BASE}/api/tracks/upload`);
+      xhr.open('POST', `${apiBase}/api/tracks/upload`);
       xhr.upload.onprogress = (e) => {
         if (e.lengthComputable) {
           setProgress(Math.round((e.loaded / e.total) * 100));
@@ -71,8 +70,14 @@ const UploadTrack: React.FC<UploadTrackProps> = ({ onUploadSuccess }) => {
 
   return (
     <div
-      onDragOver={e => { e.preventDefault(); setDragActive(true); }}
-      onDragLeave={e => { e.preventDefault(); setDragActive(false); }}
+      onDragOver={(e) => {
+        e.preventDefault();
+        setDragActive(true);
+      }}
+      onDragLeave={(e) => {
+        e.preventDefault();
+        setDragActive(false);
+      }}
       onDrop={handleDrop}
       style={{
         border: dragActive ? '2px solid #1976d2' : '2px dashed #aaa',
@@ -110,14 +115,8 @@ const UploadTrack: React.FC<UploadTrackProps> = ({ onUploadSuccess }) => {
       <div style={{ marginTop: 8, color: '#555' }}>
         Drag & drop an audio file here, or click + to select
       </div>
-      {uploading && (
-        <div style={{ marginTop: 12 }}>
-          Uploading... {progress}%
-        </div>
-      )}
-      {error && (
-        <div style={{ color: 'red', marginTop: 12 }}>{error}</div>
-      )}
+      {uploading && <div style={{ marginTop: 12 }}>Uploading... {progress}%</div>}
+      {error && <div style={{ color: 'red', marginTop: 12 }}>{error}</div>}
     </div>
   );
 };
