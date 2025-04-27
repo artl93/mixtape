@@ -3,6 +3,7 @@ import axios from 'axios';
 import { Container, Typography, Grid, CircularProgress } from '@mui/material';
 import TrackCard from './components/TrackCard';
 import DeleteDialog from './components/DeleteDialog';
+import UploadTrack from './components/UploadTrack';
 
 interface Track {
   id: number;
@@ -19,7 +20,18 @@ interface Track {
   };
 }
 
-const API_BASE = 'http://localhost:4000';
+// Remove hardcoded API_BASE
+export function getApiBase(): string {
+  // Try window.__MIXTAPE_API_BASE__ if set by server, else env, else default
+  if (typeof window !== 'undefined' && (window as any).__MIXTAPE_API_BASE__) {
+    return (window as any).__MIXTAPE_API_BASE__;
+  }
+  // CRA env var
+  if (process.env.REACT_APP_API_BASE) {
+    return process.env.REACT_APP_API_BASE;
+  }
+  return 'http://localhost:4000';
+}
 
 export default function App() {
   const [tracks, setTracks] = useState<Track[]>([]);
@@ -33,7 +45,7 @@ export default function App() {
 
   useEffect(() => {
     axios
-      .get(`${API_BASE}/api/tracks`)
+      .get(`${getApiBase()}/api/tracks`)
       .then((res) => {
         setTracks(res.data.tracks);
         setLoading(false);
@@ -76,7 +88,7 @@ export default function App() {
           track: editFields.track ? Number(editFields.track) : null,
         },
       };
-      await axios.patch(`${API_BASE}/api/tracks/${track.id}`, patch);
+      await axios.patch(`${getApiBase()}/api/tracks/${track.id}`, patch);
       setTracks((prev) =>
         prev.map((t) =>
           t.id === track.id
@@ -102,7 +114,7 @@ export default function App() {
   const handleDelete = async (trackId: number) => {
     try {
       if (playingId === trackId) setPlayingId(null); // stop playback if deleting playing track
-      await axios.delete(`${API_BASE}/api/tracks/${trackId}`);
+      await axios.delete(`${getApiBase()}/api/tracks/${trackId}`);
       setTracks((prev) => prev.filter((t) => t.id !== trackId));
       setDeleteId(null);
       setConfirmOpen(false);
@@ -111,11 +123,17 @@ export default function App() {
     }
   };
 
+  // Add upload handler
+  const handleUploadSuccess = (newTrack: Track) => {
+    setTracks((prev) => [newTrack, ...prev]);
+  };
+
   return (
     <Container maxWidth="md" sx={{ mt: 4 }}>
       <Typography variant="h3" gutterBottom>
         Mixtape: All Tracks
       </Typography>
+      <UploadTrack onUploadSuccess={handleUploadSuccess} apiBase={getApiBase()} />
       {loading ? (
         <CircularProgress />
       ) : error ? (
@@ -154,7 +172,7 @@ export default function App() {
                     setConfirmOpen(true);
                   }}
                   onKeyDown={handleCardKeyDown}
-                  API_BASE={API_BASE}
+                  API_BASE={getApiBase()}
                   onRequestStopPlaying={() => setPlayingId(null)}
                 />
               </Grid>
