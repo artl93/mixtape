@@ -25,5 +25,10 @@
   "scripts": {
     "lint": "eslint src/**/*.ts tests/**/*.ts",
     "format": "prettier --write src/**/*.ts tests/**/*.ts"
+  },
+  "jest": {
+    "setupFilesAfterEnv": [
+      "<rootDir>/src/setupTests.ts"
+    ]
   }
 }

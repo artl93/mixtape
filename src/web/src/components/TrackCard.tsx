@@ -1,11 +1,21 @@
 import React, { useState } from 'react';
-import { Card, CardContent, CardActions, Button, Typography, IconButton } from '@mui/material';
+import {
+  ListItem,
+  ListItemText,
+  ListItemAvatar,
+  Avatar,
+  TextField,
+  IconButton,
+  Box,
+  Typography,
+} from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import SaveIcon from '@mui/icons-material/Save';
 import CancelIcon from '@mui/icons-material/Cancel';
-import EditTrackForm from './EditTrackForm';
-import TrackAudioPlayer from './TrackAudioPlayer';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import PauseIcon from '@mui/icons-material/Pause';
+import DownloadIcon from '@mui/icons-material/Download';
 
 interface Track {
   id: number;
@@ -53,12 +63,9 @@ const TrackCard: React.FC<TrackCardProps> = ({
   API_BASE,
   onRequestStopPlaying,
 }) => {
+  // Only show actions if the row is hovered or focused (not when action buttons are focused)
   const [showActions, setShowActions] = useState(false);
-  const [actionsFocused, setActionsFocused] = useState(false);
   const isEditing = editId === track.id;
-
-  // Show actions if card is hovered/focused or any action button is focused
-  const shouldShowActions = showActions || actionsFocused;
 
   // Handle Escape to cancel edit
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -69,102 +76,192 @@ const TrackCard: React.FC<TrackCardProps> = ({
     }
   };
 
+  // Use a wrapper div to capture mouse events for the whole row, including actions
   return (
-    <Card
-      data-testid="track-card"
-      tabIndex={0}
-      onKeyDown={handleKeyDown}
-      sx={{ outline: isEditing ? '2px solid #1976d2' : undefined, position: 'relative' }}
+    <div
+      style={{ position: 'relative' }}
       onMouseEnter={() => setShowActions(true)}
       onMouseLeave={() => setShowActions(false)}
-      onFocus={() => setShowActions(true)}
-      onBlur={(e) => {
-        // Only hide if focus moves outside the card and action buttons
-        if (!e.currentTarget.contains(e.relatedTarget as Node)) {
-          setShowActions(false);
-        }
-      }}
     >
-      <CardContent>
-        {isEditing ? (
-          <EditTrackForm fields={editFields} onChange={onEditChange} />
-        ) : (
-          <>
-            <Typography variant="h6">{track.title}</Typography>
-            <Typography variant="body2" color="text.secondary">
-              {track.id3?.artist || 'Unknown Artist'}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              {track.id3?.album || 'Unknown Album'}
-            </Typography>
-          </>
-        )}
-      </CardContent>
-      <CardActions>
-        <Button
-          size="small"
-          onClick={() => onPlay(track.id)}
-          variant={playingId === track.id ? 'contained' : 'outlined'}
-          disabled={isEditing}
-        >
-          {playingId === track.id ? 'Playing' : 'Play'}
-        </Button>
-        <a href={`${API_BASE}${track.file_url}`} download style={{ textDecoration: 'none' }}>
-          <Button size="small" component="span" disabled={isEditing}>
-            Download
-          </Button>
-        </a>
-        {isEditing ? (
-          <>
-            <IconButton
-              color="primary"
-              onClick={() => onEditSave(track)}
-              aria-label="Save"
-              size="small"
-            >
-              <SaveIcon />
-            </IconButton>
-            <IconButton onClick={onEditCancel} aria-label="Cancel" size="small">
-              <CancelIcon />
-            </IconButton>
-          </>
-        ) : (
-          <span
-            style={{ display: shouldShowActions ? 'inline-flex' : 'none', gap: 4 }}
-            onFocus={() => setActionsFocused(true)}
-            onBlur={(e) => {
-              // Only hide if focus moves outside the span and its children
-              if (!e.currentTarget.contains(e.relatedTarget as Node)) {
-                setActionsFocused(false);
-              }
+      <ListItem
+        data-testid="track-card"
+        sx={{
+          bgcolor: isEditing ? 'action.selected' : 'background.paper',
+          borderRadius: 2,
+          mb: 1,
+          boxShadow: isEditing ? 2 : 0,
+          display: 'flex',
+          alignItems: 'center',
+          minHeight: 64,
+          px: 2,
+        }}
+        onKeyDown={handleKeyDown}
+        onFocus={() => setShowActions(true)}
+        onBlur={(e) => {
+          if (!e.currentTarget.contains(e.relatedTarget)) {
+            setShowActions(false);
+          }
+        }}
+        tabIndex={0}
+      >
+        <ListItemAvatar>
+          <Avatar
+            sx={{
+              bgcolor: playingId === track.id ? 'primary.main' : 'background.paper',
+              color: playingId === track.id ? 'common.white' : 'primary.main',
+              transition: 'all 0.2s',
             }}
           >
-            <IconButton
-              color="primary"
-              onClick={() => onEdit(track)}
-              aria-label="Edit"
-              size="small"
-            >
-              <EditIcon />
+            {playingId === track.id ? <PauseIcon /> : <PlayArrowIcon />}
+          </Avatar>
+        </ListItemAvatar>
+        <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', gap: 2 }}>
+          {isEditing ? (
+            <>
+              <TextField
+                variant="standard"
+                value={editFields.title}
+                onChange={(e) => onEditChange('title', e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') onEditSave(track);
+                  if (e.key === 'Escape') onEditCancel();
+                }}
+                sx={{ minWidth: 120, flex: 2 }}
+                inputProps={{ 'aria-label': 'Edit title', 'data-testid': 'edit-title' }}
+                autoFocus
+              />
+              <TextField
+                variant="standard"
+                value={editFields.artist}
+                onChange={(e) => onEditChange('artist', e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') onEditSave(track);
+                  if (e.key === 'Escape') onEditCancel();
+                }}
+                sx={{ minWidth: 100, flex: 1 }}
+                inputProps={{ 'aria-label': 'Edit artist', 'data-testid': 'edit-artist' }}
+              />
+              <TextField
+                variant="standard"
+                value={editFields.album}
+                onChange={(e) => onEditChange('album', e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') onEditSave(track);
+                  if (e.key === 'Escape') onEditCancel();
+                }}
+                sx={{ minWidth: 100, flex: 1 }}
+                inputProps={{ 'aria-label': 'Edit album', 'data-testid': 'edit-album' }}
+              />
+              <TextField
+                variant="standard"
+                value={editFields.track}
+                onChange={(e) => onEditChange('track', e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') onEditSave(track);
+                  if (e.key === 'Escape') onEditCancel();
+                }}
+                sx={{ width: 60 }}
+                inputProps={{
+                  'aria-label': 'Edit track number',
+                  'data-testid': 'edit-track',
+                  type: 'number',
+                }}
+              />
+            </>
+          ) : (
+            <>
+              <Typography variant="subtitle1" sx={{ fontWeight: 500, flex: 2 }}>
+                {track.title}
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ flex: 1 }}>
+                {track.id3?.artist || 'Unknown Artist'}
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ flex: 1 }}>
+                {track.id3?.album || 'Unknown Album'}
+              </Typography>
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{ width: 40, textAlign: 'right' }}
+              >
+                {track.id3?.track || ''}
+              </Typography>
+            </>
+          )}
+        </Box>
+        {/* Action icons, always reserve space, fade in/out */}
+        <Box
+          sx={{
+            width: 220, // enough for all icons, adjust as needed
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1,
+            ml: 2,
+            opacity: showActions || isEditing ? 1 : 0.15,
+            pointerEvents: showActions || isEditing ? 'auto' : 'none',
+            transition: 'opacity 0.2s',
+          }}
+        >
+          <IconButton
+            size="small"
+            onClick={() => onPlay(playingId === track.id ? null : track.id)}
+            color={playingId === track.id ? 'primary' : 'default'}
+            disabled={isEditing}
+            aria-label={playingId === track.id ? 'Pause' : 'Play'}
+          >
+            {playingId === track.id ? <PauseIcon /> : <PlayArrowIcon />}
+          </IconButton>
+          <a href={`${API_BASE}${track.file_url}`} download style={{ textDecoration: 'none' }}>
+            <IconButton size="small" disabled={isEditing} aria-label="Download">
+              <DownloadIcon />
             </IconButton>
-            <IconButton
-              color="error"
-              onClick={() => {
-                if (onRequestStopPlaying) onRequestStopPlaying();
-                onDeleteRequest(track.id);
-              }}
-              aria-label="Delete"
-              size="small"
-            >
-              <DeleteIcon />
-            </IconButton>
-          </span>
-        )}
-      </CardActions>
-      {playingId === track.id && (
-        <TrackAudioPlayer src={`${API_BASE}${track.file_url}`} onEnded={() => onPlay(null)} />
-      )}
-    </Card>
+          </a>
+          {isEditing ? (
+            <>
+              <IconButton
+                color="primary"
+                onClick={() => onEditSave(track)}
+                aria-label="Save"
+                size="small"
+              >
+                <SaveIcon />
+              </IconButton>
+              <IconButton
+                onClick={() => {
+                  onEditCancel();
+                }}
+                aria-label="Cancel"
+                size="small"
+              >
+                <CancelIcon />
+              </IconButton>
+            </>
+          ) : (
+            <>
+              <IconButton
+                color="primary"
+                onClick={() => onEdit(track)}
+                aria-label="Edit"
+                size="small"
+              >
+                <EditIcon />
+              </IconButton>
+              <IconButton
+                color="error"
+                onClick={() => {
+                  if (onRequestStopPlaying) onRequestStopPlaying();
+                  onDeleteRequest(track.id);
+                }}
+                aria-label="Delete"
+                size="small"
+              >
+                <DeleteIcon />
+              </IconButton>
+            </>
+          )}
+        </Box>
+      </ListItem>
+    </div>
   );
 };
 
