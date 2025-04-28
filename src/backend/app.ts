@@ -29,6 +29,7 @@ app.get('/uploads/:filename', async (req, res) => {
   if (!fs.existsSync(filePath)) {
     return res.status(404).json({ error: 'File not found' });
   }
+
   // Find track by file_url
   const dbRes = await pool.query('SELECT * FROM tracks WHERE file_url = $1', [
     `/uploads/${filename}`,
@@ -37,6 +38,7 @@ app.get('/uploads/:filename', async (req, res) => {
     return res.status(404).json({ error: 'Track not found' });
   }
   const track = dbRes.rows[0];
+
   // Prepare ID3 tags from DB
   const tags = {
     title: track.title || track.id3?.title || '',
@@ -46,16 +48,20 @@ app.get('/uploads/:filename', async (req, res) => {
     genre: track.id3?.genre || undefined,
     trackNumber: track.id3?.track ? String(track.id3.track) : undefined,
   };
+
   // Write tags to a temp file
-  const tmpPath = filePath + '.tmp';
+  const tmpPath = `${filePath}.tmp`;
   fs.copyFileSync(filePath, tmpPath);
   nodeID3.write(tags, tmpPath);
+
   // Prepare download filename from track title
   let downloadName = track.title || filename;
   downloadName = downloadName.replace(/[^a-zA-Z0-9-_\.]/g, '_') + '.mp3';
+
   res.setHeader('Content-Type', 'audio/mpeg');
-  res.setHeader('Content-Disposition', `attachment; filename="${downloadName}"`);
-  // Stream the temp file, then delete it
+  // For streaming, do not set Content-Disposition
+
+  // Stream the temp file, then delete it after response ends
   const stream = fs.createReadStream(tmpPath);
   stream.pipe(res);
   stream.on('close', () => {

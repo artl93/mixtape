@@ -19,7 +19,7 @@ fi
 # 2. Start backend if not running
 if ! lsof -i :4000 | grep LISTEN >/dev/null 2>&1; then
   echo "[run-full-stack.sh] Starting backend server..."
-  ./run-server.sh
+  ./run-backend.sh
   sleep 5
 else
   echo "[run-full-stack.sh] Backend server is already running on port 4000."
