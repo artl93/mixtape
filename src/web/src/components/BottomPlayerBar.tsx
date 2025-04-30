@@ -42,12 +42,15 @@ export const BottomPlayerBar: React.FC<BottomPlayerBarProps> = ({
   //   }
   // }, [playing, track]);
 
-  // Instead, only control play/pause after metadata is loaded or when toggling play
+  // Always control play/pause when the playing state changes
   useEffect(() => {
-    if (audioRef.current && !playing) {
-      audioRef.current.pause();
+    if (audioRef.current) {
+      if (playing) {
+        audioRef.current.play();
+      } else {
+        audioRef.current.pause();
+      }
     }
-    // If playing is true, let shouldAutoPlay/onLoadedMetadata handle play()
   }, [playing]);
 
   // Keep slider in sync with currentTime, unless user is seeking
@@ -172,8 +175,14 @@ export const BottomPlayerBar: React.FC<BottomPlayerBarProps> = ({
       <Typography variant="caption" sx={{ minWidth: 60, textAlign: 'right' }}>
         {formatTime(currentTime)} / {formatTime(duration)}
       </Typography>
+      {/* Only set src if track and filename are valid to avoid unsupported sources error */}
       <audio
         ref={audioRef}
+        src={
+          track && track.file_url
+            ? `${API_BASE}/api/tracks/stream/${track.file_url.split('/').pop()}`
+            : undefined
+        }
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={handleLoadedMetadata}
         onEnded={onEnded}
