@@ -120,3 +120,9 @@ jobs:
 
       - name: Stop backend server
         run: ./eng/stop-test-server.sh
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-results
+          path: ci-test-results
