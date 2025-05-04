@@ -1,6 +1,6 @@
 import React from 'react';
 import { List } from '@mui/material';
-import type { Track } from '../types';
+import type { EditFields, Track } from '../types';
 import TrackCard from './TrackCard';
 import DeleteDialog from './DeleteDialog';
 import { getApiBase } from '../utils/api';
