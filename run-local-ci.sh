@@ -1,6 +1,18 @@
 #!/bin/bash
 # run-local-ci.sh - Run the full CI workflow locally for Mixtape backend
+# Usage: ./run-local-ci.sh [--keep-services|-k]
+#   --keep-services, -k   Do not stop backend, frontend, or Postgres after tests (for debugging)
 set -e
+
+# --- Argument parsing ---
+KEEP_SERVICES=0
+for arg in "$@"; do
+  case "$arg" in
+    --keep-services|-k)
+      KEEP_SERVICES=1
+      ;;
+  esac
+done
 
 # Clean up any old backend server logs that could interfere with mktemp or server startup
 rm -f /tmp/mixtape-backend-server.*.log
@@ -62,10 +74,35 @@ cd ../..
 sleep 5
 ./test-server.sh
 
-# 7. Run web frontend Playwright tests
-cd src/web
-npm install --legacy-peer-deps
-npx playwright install --with-deps
+# 7. Run web frontend tests (Jest component tests and Playwright E2E tests)
+cd src/web || exit 1
+echo "[run-local-ci.sh] Installing frontend dependencies..."
+if ! npm install --legacy-peer-deps; then
+  echo "[run-local-ci.sh] ERROR: Frontend dependency installation failed"
+  exit 1
+fi
+
+# Run frontend linting
+echo "[run-local-ci.sh] Running frontend linting..."
+if ! npm run lint; then
+  echo "[run-local-ci.sh] ERROR: Frontend linting failed"
+  exit 1
+fi
+echo "[run-local-ci.sh] Frontend linting passed."
+
+# Run Jest component tests with proper error handling
+echo "[run-local-ci.sh] Running frontend component tests..."
+if ! CI=true npm test -- --watchAll=false --testMatch="**/*.test.{ts,tsx}" --colors; then
+  echo "[run-local-ci.sh] ERROR: Frontend component tests failed"
+  exit 1
+fi
+
+# Install and run Playwright E2E tests with error handling
+echo "[run-local-ci.sh] Installing Playwright browsers..."
+if ! npx playwright install --with-deps; then
+  echo "[run-local-ci.sh] ERROR: Playwright installation failed"
+  exit 1
+fi
 
 # --- Start frontend server in background ---
 FRONTEND_LOG="/tmp/mixtape-frontend-server.$$.log"
@@ -77,10 +114,18 @@ function stop_frontend {
     wait "$FRONTEND_PID" 2>/dev/null || true
   fi
 }
-trap stop_frontend EXIT
+# Only set trap if not keeping services
+if [ "$KEEP_SERVICES" -eq 0 ]; then
+  trap stop_frontend EXIT
+fi
 
 # Start frontend (React dev server)
-npm run dev > "$FRONTEND_LOG" 2>&1 &
+echo "[run-local-ci.sh] Starting frontend server..."
+if ! npm run dev > "$FRONTEND_LOG" 2>&1 & then
+  echo "[run-local-ci.sh] ERROR: Failed to start frontend server"
+  cat "$FRONTEND_LOG"
+  exit 1
+fi
 FRONTEND_PID=$!
 echo "[run-local-ci.sh] Started frontend server (PID $FRONTEND_PID), waiting for it to be ready..."
 
@@ -102,21 +147,25 @@ npx playwright test
 
 cd ../..
 
-# 8. Stop backend server
-./eng/stop-test-server.sh
+if [ "$KEEP_SERVICES" -eq 0 ]; then
+  # 8. Stop backend server
+  ./eng/stop-test-server.sh
 
-# 9. Stop Postgres (if started by this script, Homebrew)
-if command -v brew >/dev/null 2>&1; then
-  echo "[run-local-ci.sh] Stopping PostgreSQL service (Homebrew)..."
-  brew services stop postgresql
-fi
+  # 9. Stop Postgres (if started by this script, Homebrew)
+  if command -v brew >/dev/null 2>&1; then
+    echo "[run-local-ci.sh] Stopping PostgreSQL service (Homebrew)..."
+    brew services stop postgresql
+  fi
 
-trap - EXIT
-# Kill all frontend servers on port 3000 (not just the one started by this script)
-FRONTEND_PIDS=$(lsof -ti :3000)
-if [ -n "$FRONTEND_PIDS" ]; then
-  echo "[run-local-ci.sh] Cleaning up all frontend servers on port 3000: $FRONTEND_PIDS ..."
-  kill $FRONTEND_PIDS || true
+  trap - EXIT
+  # Kill all frontend servers on port 3000 (not just the one started by this script)
+  FRONTEND_PIDS=$(lsof -ti :3000)
+  if [ -n "$FRONTEND_PIDS" ]; then
+    echo "[run-local-ci.sh] Cleaning up all frontend servers on port 3000: $FRONTEND_PIDS ..."
+    kill $FRONTEND_PIDS || true
+  fi
+else
+  echo "[run-local-ci.sh] --keep-services flag set: leaving backend, frontend, and Postgres running."
 fi
 
 echo "[run-local-ci.sh] Local CI workflow complete!"

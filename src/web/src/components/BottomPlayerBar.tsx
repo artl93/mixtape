@@ -1,21 +1,34 @@
-import React, { useRef, useEffect } from 'react';
-import { Box, IconButton, Typography, Slider, useTheme, Paper } from '@mui/material';
-import PlayArrowIcon from '@mui/icons-material/PlayArrow';
-import PauseIcon from '@mui/icons-material/Pause';
+import React, { useState, useRef, useEffect } from 'react';
+import {
+  AppBar,
+  Toolbar,
+  IconButton,
+  Typography,
+  Box,
+  Slider,
+  LinearProgress,
+} from '@mui/material';
+import { PlayArrow, Pause } from '@mui/icons-material';
+import type { Track } from '../types';
 
-interface BottomPlayerBarProps {
-  track: {
-    title: string;
-    id3?: { artist?: string | null; album?: string | null };
-    file_url: string;
-  } | null;
+// Export the props type to make it available for other files
+export type BottomPlayerBarProps = {
+  track: Track | null;
   playing: boolean;
   onPlayPause: () => void;
   onSeek: (time: number) => void;
   onEnded: () => void;
   API_BASE: string;
-}
+};
 
+/**
+ * Audio player component that displays at the bottom of the screen
+ *
+ * Key features:
+ * 1. Play/pause/restart audio playback
+ * 2. Show and control playback position with a slider
+ * 3. Display current time and track duration
+ */
 export const BottomPlayerBar: React.FC<BottomPlayerBarProps> = ({
   track,
   playing,
@@ -24,170 +37,181 @@ export const BottomPlayerBar: React.FC<BottomPlayerBarProps> = ({
   onEnded,
   API_BASE,
 }) => {
-  const theme = useTheme();
+  // Audio element reference and state
   const audioRef = useRef<HTMLAudioElement>(null);
-  const [currentTime, setCurrentTime] = React.useState(0);
-  const [duration, setDuration] = React.useState(0);
-  const [sliderValue, setSliderValue] = React.useState(0);
-  const [isSeeking, setIsSeeking] = React.useState(false);
-  const [shouldAutoPlay, setShouldAutoPlay] = React.useState(false);
-  // Track if the user has manually moved the slider (seeked)
-  const [hasSeeked, setHasSeeked] = React.useState(false);
+  const [progress, setProgress] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Remove this effect, as it causes a race with shouldAutoPlay logic
-  // useEffect(() => {
-  //   if (audioRef.current && track) {
-  //     if (playing) audioRef.current.play();
-  //     else audioRef.current.pause();
-  //   }
-  // }, [playing, track]);
-
-  // Instead, only control play/pause after metadata is loaded or when toggling play
+  // Reset progress when track changes
   useEffect(() => {
-    if (audioRef.current && !playing) {
-      audioRef.current.pause();
-    }
-    // If playing is true, let shouldAutoPlay/onLoadedMetadata handle play()
-  }, [playing]);
+    setProgress(0);
+    setIsLoading(track != null);
 
-  // Keep slider in sync with currentTime, unless user is seeking
-  useEffect(() => {
-    if (!isSeeking) setSliderValue(currentTime);
-  }, [currentTime, isSeeking]);
-
-  // When track changes, update audio src imperatively and reset state
-  useEffect(() => {
-    if (audioRef.current && track) {
-      const filename = track.file_url.split('/').pop();
-      audioRef.current.src = `${API_BASE}/api/tracks/stream/${filename}`;
-      audioRef.current.load();
-      setCurrentTime(0);
-      setDuration(0);
-      setSliderValue(0);
-      setIsSeeking(false);
-      setHasSeeked(false);
-      if (playing) setShouldAutoPlay(true);
-    }
-  }, [track, API_BASE]);
-
-  // When play is pressed after seeking, ensure playback resumes
-  useEffect(() => {
-    if (audioRef.current && playing) {
-      // If the user has seeked, call play() again to resume
-      if (hasSeeked) {
-        audioRef.current.play();
-        setHasSeeked(false);
-      }
-    }
-  }, [playing, hasSeeked]);
-
-  const handleTimeUpdate = () => {
-    if (audioRef.current) setCurrentTime(audioRef.current.currentTime);
-  };
-  const handleLoadedMetadata = () => {
-    if (audioRef.current) setDuration(audioRef.current.duration);
-    if (shouldAutoPlay && audioRef.current) {
-      audioRef.current.play();
-      setShouldAutoPlay(false);
-    }
-  };
-  // Only allow seeking if duration is finite and > 0
-  const handleSliderChange = (_: any, value: number | number[]) => {
-    if (
-      typeof value === 'number' &&
-      isFinite(duration) &&
-      duration > 0 &&
-      value >= 0 &&
-      value <= duration
-    ) {
-      setIsSeeking(true);
-      setSliderValue(value);
-    }
-  };
-  const handleSliderCommit = (_: any, value: number | number[]) => {
-    if (
-      audioRef.current &&
-      typeof value === 'number' &&
-      isFinite(duration) &&
-      duration > 0 &&
-      value >= 0 &&
-      value <= duration &&
-      isFinite(value)
-    ) {
-      audioRef.current.currentTime = value;
-      setCurrentTime(value);
-      setSliderValue(value);
-      setIsSeeking(false);
-      setHasSeeked(true); // Mark that the user has seeked
-      onSeek(value);
+    // Set duration from track metadata if available
+    if (track?.id3?.duration) {
+      setDuration(track.id3.duration);
     } else {
-      setIsSeeking(false);
+      setDuration(0);
     }
+  }, [track]);
+
+  // Format time as MM:SS
+  const formatTime = (seconds: number) => {
+    if (!isFinite(seconds) || seconds < 0) return '0:00';
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
+
+  // Handle audio element initialization and cleanup
+  useEffect(() => {
+    // Pause any previous audio when component unmounts
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+    };
+  }, []);
+
+  // Handle play/pause state changes
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio || !track) return;
+
+    if (playing) {
+      // Store current track ID to handle async completion
+      const currentTrackId = track.id;
+      setIsLoading(true);
+
+      const playPromise = audio.play();
+      if (playPromise !== undefined) {
+        playPromise
+          .then(() => {
+            if (track.id === currentTrackId) {
+              setIsLoading(false);
+            }
+          })
+          .catch((err) => {
+            console.error('Playback failed', err);
+            if (track.id === currentTrackId) {
+              setIsLoading(false);
+              onPlayPause(); // Tell parent playback failed
+            }
+          });
+      }
+    } else {
+      audio.pause();
+      setIsLoading(false);
+    }
+  }, [playing, onPlayPause, track]);
 
   if (!track) return null;
 
   return (
-    <Paper
+    <AppBar
+      position="fixed"
+      color="default"
+      sx={{ top: 'auto', bottom: 0 }}
       role="region"
-      aria-label="Player"
-      elevation={8}
-      sx={{
-        position: 'fixed',
-        left: 0,
-        right: 0,
-        bottom: 0,
-        zIndex: 1300,
-        bgcolor: theme.palette.background.paper,
-        color: theme.palette.text.primary,
-        borderTop: `1px solid ${theme.palette.divider}`,
-        px: 2,
-        py: 1,
-        display: 'flex',
-        alignItems: 'center',
-        gap: 2,
-        boxShadow: '0 -2px 8px rgba(0,0,0,0.2)',
-      }}
+      aria-label="player"
     >
-      <IconButton onClick={onPlayPause} color="primary" size="large">
-        {playing ? <PauseIcon /> : <PlayArrowIcon />}
-      </IconButton>
-      <Box sx={{ minWidth: 0, flex: 1, overflow: 'hidden' }}>
-        <Typography noWrap fontWeight={500}>
-          {track.title}
-        </Typography>
-        <Typography variant="body2" color="text.secondary" noWrap>
-          {track.id3?.artist || 'Unknown Artist'} — {track.id3?.album || 'Unknown Album'}
-        </Typography>
-      </Box>
-      <Slider
-        min={0}
-        max={duration || 1}
-        value={sliderValue}
-        onChange={handleSliderChange}
-        onChangeCommitted={handleSliderCommit}
-        sx={{ width: 200, mx: 2 }}
-        size="small"
-      />
-      <Typography variant="caption" sx={{ minWidth: 60, textAlign: 'right' }}>
-        {formatTime(currentTime)} / {formatTime(duration)}
-      </Typography>
-      <audio
-        ref={audioRef}
-        onTimeUpdate={handleTimeUpdate}
-        onLoadedMetadata={handleLoadedMetadata}
-        onEnded={onEnded}
-        style={{ display: 'none' }}
-      />
-    </Paper>
+      {isLoading && <LinearProgress />}
+      <Toolbar variant="dense">
+        <IconButton
+          onClick={onPlayPause}
+          aria-label={playing ? 'pause' : 'play'}
+          data-testid={playing ? 'pause-button' : 'play-button'}
+        >
+          {playing ? <Pause /> : <PlayArrow />}
+        </IconButton>
+        <Box sx={{ ml: 2, flexGrow: 1 }}>
+          <Typography variant="body1" component="div" data-testid="track-title">
+            {track.title}
+          </Typography>
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            component="div"
+            data-testid="track-artist"
+          >
+            {track.id3?.artist || 'Unknown Artist'}
+          </Typography>
+        </Box>
+        <Box sx={{ width: 300, mx: 2 }}>
+          {duration > 0 && (
+            <>
+              <Slider
+                size="small"
+                value={progress}
+                max={duration}
+                data-testid="progress-slider"
+                onChange={(_, value) => {
+                  const audio = audioRef.current;
+                  const numValue = value as number;
+                  if (audio && isFinite(numValue)) {
+                    try {
+                      audio.currentTime = numValue;
+                      setProgress(numValue);
+                      onSeek(numValue);
+                    } catch (err) {
+                      console.error('Could not seek:', err);
+                    }
+                  }
+                }}
+                aria-label="track progress"
+                valueLabelDisplay="auto"
+                valueLabelFormat={(value) => formatTime(value)}
+              />
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ minWidth: 120, textAlign: 'center', display: 'block' }}
+                data-testid="time-display"
+              >
+                {formatTime(progress)} / {formatTime(duration)}
+              </Typography>
+            </>
+          )}
+          {duration <= 0 && (
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ display: 'flex', justifyContent: 'center' }}
+            >
+              Loading track information...
+            </Typography>
+          )}
+        </Box>
+        <audio
+          ref={audioRef}
+          src={`${API_BASE}${track.file_url}`}
+          onTimeUpdate={(e) => {
+            const audio = e.currentTarget;
+            if (isFinite(audio.currentTime)) {
+              setProgress(audio.currentTime);
+            }
+          }}
+          onLoadedMetadata={(e) => {
+            const audio = e.currentTarget;
+            if (isFinite(audio.duration) && audio.duration > 0) {
+              setDuration(audio.duration);
+              setIsLoading(false);
+            }
+          }}
+          onEnded={onEnded}
+          onError={(e) => {
+            console.error('Audio error:', e);
+            setIsLoading(false);
+            onPlayPause(); // Reset playing state on error
+          }}
+          preload="metadata"
+          data-testid="audio-element"
+        />
+      </Toolbar>
+    </AppBar>
   );
 };
 
-function formatTime(sec: number) {
-  if (!isFinite(sec)) return '0:00';
-  const m = Math.floor(sec / 60);
-  const s = Math.floor(sec % 60);
-  return `${m}:${s.toString().padStart(2, '0')}`;
-}
-
+// Export the component as the default export
 export default BottomPlayerBar;
