@@ -8,7 +8,7 @@ import { getApiBase } from '../utils/api';
 interface TrackListProps {
   tracks: Track[];
   editId: number | null;
-  editFields: any;
+  editFields: EditFields;
   playerTrack: Track | null;
   playerPlaying: boolean;
   confirmOpen: boolean;
