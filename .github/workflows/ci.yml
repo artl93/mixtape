@@ -41,6 +41,18 @@ jobs:
           cd src/backend
           npx tsc --noEmit
 
+      - name: Install frontend dependencies
+        working-directory: src/web
+        run: npm install --legacy-peer-deps
+
+      - name: Lint frontend (treat warnings as errors)
+        working-directory: src/web
+        run: npm run lint -- --max-warnings=0
+
+      - name: Format frontend (check only)
+        working-directory: src/web
+        run: npx prettier --check 'src/**/*.{ts,tsx,css,md}'
+
       - name: Set up PostgreSQL
         uses: Harmon758/postgresql-action@v1
         with:
@@ -67,21 +79,9 @@ jobs:
           sleep 5
           ./test-server.sh
 
-      - name: Install frontend dependencies
-        working-directory: src/web
-        run: npm install --legacy-peer-deps
-
       - name: Install Playwright browsers
         working-directory: src/web
         run: npx playwright install --with-deps
-
-      - name: Lint frontend (treat warnings as errors)
-        working-directory: src/web
-        run: npm run lint -- --max-warnings=0
-
-      - name: Format frontend (check only)
-        working-directory: src/web
-        run: npx prettier --check 'src/**/*.{ts,tsx,css,md}'
 
       - name: Run frontend component tests
         working-directory: src/web

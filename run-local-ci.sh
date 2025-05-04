@@ -82,6 +82,14 @@ if ! npm install --legacy-peer-deps; then
   exit 1
 fi
 
+# Run frontend linting
+echo "[run-local-ci.sh] Running frontend linting..."
+if ! npm run lint; then
+  echo "[run-local-ci.sh] ERROR: Frontend linting failed"
+  exit 1
+fi
+echo "[run-local-ci.sh] Frontend linting passed."
+
 # Run Jest component tests with proper error handling
 echo "[run-local-ci.sh] Running frontend component tests..."
 if ! CI=true npm test -- --watchAll=false --testMatch="**/*.test.{ts,tsx}" --colors; then
