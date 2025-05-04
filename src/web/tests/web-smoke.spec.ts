@@ -160,15 +160,18 @@ test.describe('Mixtape Web UI', () => {
       await expect(audio).toBeAttached();
       const src = await audio.getAttribute('src');
       expect(src).toContain('.mp3'); // Or appropriate extension
-      await expect(playerPauseButton).toBeVisible(); // Pause should be visible initially
-      await expect(playerPlayButton).toBeHidden();   // Play should be hidden
 
-      // Wait for audio to actually start playing (check paused state becomes false)
+      // --- Wait for playback to initiate and UI to update ---
+      // 1. Wait for audio element to report playing (paused is false)
       await expect(async () => {
         expect(await audio.evaluate(node => node.paused)).toBe(false);
-      }).toPass({ timeout: TEST_TIMEOUTS.playback });
+      }).toPass({ timeout: TEST_TIMEOUTS.playback }); // Use playback timeout
 
-      // Wait for time to advance slightly
+      // 2. NOW check if the pause button is visible and play is hidden
+      await expect(playerPauseButton).toBeVisible({ timeout: TEST_TIMEOUTS.element }); // Use element timeout
+      await expect(playerPlayButton).toBeHidden({ timeout: TEST_TIMEOUTS.element });   // Use element timeout // <-- This was line 164
+
+      // Wait for time to advance slightly (verify playback is progressing)
       await expect(async () => {
         expect(await audio.evaluate(node => node.currentTime)).toBeGreaterThan(0.1);
       }).toPass({ timeout: TEST_TIMEOUTS.playback });
