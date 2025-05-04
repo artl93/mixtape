@@ -74,10 +74,27 @@ cd ../..
 sleep 5
 ./test-server.sh
 
-# 7. Run web frontend Playwright tests
-cd src/web
-npm install --legacy-peer-deps
-npx playwright install --with-deps
+# 7. Run web frontend tests (Jest component tests and Playwright E2E tests)
+cd src/web || exit 1
+echo "[run-local-ci.sh] Installing frontend dependencies..."
+if ! npm install --legacy-peer-deps; then
+  echo "[run-local-ci.sh] ERROR: Frontend dependency installation failed"
+  exit 1
+fi
+
+# Run Jest component tests with proper error handling
+echo "[run-local-ci.sh] Running frontend component tests..."
+if ! CI=true npm test -- --watchAll=false --testMatch="**/*.test.{ts,tsx}" --colors; then
+  echo "[run-local-ci.sh] ERROR: Frontend component tests failed"
+  exit 1
+fi
+
+# Install and run Playwright E2E tests with error handling
+echo "[run-local-ci.sh] Installing Playwright browsers..."
+if ! npx playwright install --with-deps; then
+  echo "[run-local-ci.sh] ERROR: Playwright installation failed"
+  exit 1
+fi
 
 # --- Start frontend server in background ---
 FRONTEND_LOG="/tmp/mixtape-frontend-server.$$.log"
@@ -95,7 +112,12 @@ if [ "$KEEP_SERVICES" -eq 0 ]; then
 fi
 
 # Start frontend (React dev server)
-npm run dev > "$FRONTEND_LOG" 2>&1 &
+echo "[run-local-ci.sh] Starting frontend server..."
+if ! npm run dev > "$FRONTEND_LOG" 2>&1 & then
+  echo "[run-local-ci.sh] ERROR: Failed to start frontend server"
+  cat "$FRONTEND_LOG"
+  exit 1
+fi
 FRONTEND_PID=$!
 echo "[run-local-ci.sh] Started frontend server (PID $FRONTEND_PID), waiting for it to be ready..."
 

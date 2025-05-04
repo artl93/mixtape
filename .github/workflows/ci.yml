@@ -83,6 +83,10 @@ jobs:
         working-directory: src/web
         run: npx prettier --check 'src/**/*.{ts,tsx,css,md}'
 
+      - name: Run frontend component tests
+        working-directory: src/web
+        run: CI=true npm test -- --watchAll=false --ci --coverage
+
       - name: Start frontend dev server
         working-directory: src/web
         run: |

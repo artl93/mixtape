@@ -2,8 +2,10 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 import App from './App';
 
-test('renders learn react link', () => {
+// Update the test description and the text being searched for
+test('renders Mixtape title in header', () => {
   render(<App />);
-  const linkElement = screen.getByText(/learn react/i);
-  expect(linkElement).toBeInTheDocument();
+  // Look for the text "Mixtape" (case-insensitive) within a heading element
+  const titleElement = screen.getByRole('heading', { name: /Mixtape/i });
+  expect(titleElement).toBeInTheDocument();
 });

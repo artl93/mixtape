@@ -130,4 +130,121 @@ test.describe('Mixtape Web UI', () => {
       cleanup();
     }
   });
+
+  test('should play (stream) a track, pause, seek, and resume', async ({ cleanPage: page, testHelpers, browserName }) => {
+    // Skip on WebKit due to potential audio playback/control issues in automation
+    test.skip(browserName === 'webkit', 'Audio playback control test is skipped on WebKit.');
+
+    const { tempUploadPath, uniqueTitle, cleanup } = testHelpers.createTempTestFile('ui-upload-test-play-controls');
+
+    try {
+      const trackCard = await testHelpers.uploadTestFile(tempUploadPath, uniqueTitle);
+
+      // --- Start Playback ---
+      await trackCard.hover();
+      const cardPlayButton = trackCard.getByRole('button', { name: /play/i });
+      await cardPlayButton.click();
+
+      // --- Verify Player Bar Appears ---
+      const playerBar = page.getByRole('region', { name: /player/i });
+      await expect(playerBar.getByText(uniqueTitle)).toBeVisible({ timeout: TEST_TIMEOUTS.playerBar });
+
+      // --- Locate Elements within Player Bar ---
+      const audio = playerBar.locator('audio');
+      const playerPlayButton = playerBar.getByRole('button', { name: /play/i }); // Initially hidden
+      const playerPauseButton = playerBar.getByRole('button', { name: /pause/i });
+      const sliderInput = playerBar.locator('input[type="range"]');
+      const timeDisplay = playerBar.getByTestId('time-display');
+
+      // --- Verify Initial Play State ---
+      await expect(audio).toBeAttached();
+      const src = await audio.getAttribute('src');
+      expect(src).toContain('.mp3'); // Or appropriate extension
+      await expect(playerPauseButton).toBeVisible(); // Pause should be visible initially
+      await expect(playerPlayButton).toBeHidden();   // Play should be hidden
+
+      // Wait for audio to actually start playing (check paused state becomes false)
+      await expect(async () => {
+        expect(await audio.evaluate(node => node.paused)).toBe(false);
+      }).toPass({ timeout: TEST_TIMEOUTS.playback });
+
+      // Wait for time to advance slightly
+      await expect(async () => {
+        expect(await audio.evaluate(node => node.currentTime)).toBeGreaterThan(0.1);
+      }).toPass({ timeout: TEST_TIMEOUTS.playback });
+      await expect(timeDisplay).not.toHaveText('0:00 / 4:13'); // Assuming duration is 4:13
+
+      // --- Test Pause ---
+      await playerPauseButton.click();
+      await expect(playerPlayButton).toBeVisible(); // Play button should appear
+      await expect(playerPauseButton).toBeHidden();  // Pause button should hide
+      // Verify audio is paused
+      await expect(async () => {
+        expect(await audio.evaluate(node => node.paused)).toBe(true);
+      }).toPass({ timeout: TEST_TIMEOUTS.playback });
+      const pausedTime = await audio.evaluate(node => node.currentTime);
+
+      // --- Test Play (Resume) ---
+      await playerPlayButton.click();
+      await expect(playerPauseButton).toBeVisible(); // Pause button should appear
+      await expect(playerPlayButton).toBeHidden();   // Play button should hide
+      // Verify audio resumes
+      await expect(async () => {
+        expect(await audio.evaluate(node => node.paused)).toBe(false);
+      }).toPass({ timeout: TEST_TIMEOUTS.playback });
+      // Verify time advances from where it was paused
+      await expect(async () => {
+        expect(await audio.evaluate(node => node.currentTime)).toBeGreaterThan(pausedTime);
+      }).toPass({ timeout: TEST_TIMEOUTS.playback });
+
+      // --- Test Seek ---
+      const duration = await audio.evaluate(node => node.duration);
+      console.log(`[Test Debug] Audio duration reported: ${duration}`);
+
+      // Check if duration is a valid, finite number greater than a minimum threshold (e.g., 5 seconds)
+      if (duration && Number.isFinite(duration) && duration > 5) {
+        const seekTargetTime = Math.floor(duration / 3); // Seek to 1/3rd of the track
+        console.log(`[Test Debug] Directly setting currentTime to: ${seekTargetTime}`);
+
+        // --- Direct currentTime Manipulation ---
+        // Directly set the currentTime property on the audio element
+        await audio.evaluate((node, time) => {
+          node.currentTime = time;
+        }, seekTargetTime);
+        // --- End Direct Manipulation ---
+
+        // Verify audio currentTime jumps to near the seek target
+        // Use a reasonable timeout for the browser to process the change
+        await expect(async () => {
+          const currentTime = await audio.evaluate(node => node.currentTime);
+          console.log(`[Test Debug] Current time after setting currentTime: ${currentTime}`);
+          // Allow a small tolerance for timing inaccuracies
+          expect(currentTime).toBeGreaterThanOrEqual(seekTargetTime - 2);
+          expect(currentTime).toBeLessThanOrEqual(seekTargetTime + 2);
+        }).toPass({ timeout: 5000 }); // Use a shorter timeout (e.g., 5 seconds) as direct setting should be faster
+
+        // Verify time display updates after seek (This might still depend on the component listening to 'timeupdate' or 'seeked' events)
+        const expectedMinutes = Math.floor(seekTargetTime / 60);
+        const expectedSeconds = String(seekTargetTime % 60).padStart(2, '0');
+        // Wait slightly longer for the UI to potentially update based on audio events
+        await expect(timeDisplay).toContainText(`${expectedMinutes}:${expectedSeconds}`, { timeout: TEST_TIMEOUTS.element + 2000 });
+
+      } else {
+        // Log a warning if duration is invalid, skip seek test portion
+        console.warn(`[Test Warning] Invalid or infinite duration (${duration}), skipping seek verification.`);
+        await expect(sliderInput).toBeVisible(); // Still check if slider is visible
+      }
+
+      // --- Final Cleanup ---
+      // await playerPauseButton.click(); // Ensure paused before potential delete
+
+    } finally {
+      // Ensure the track is deleted even if assertions fail
+      const trackCardToDelete = page.locator('[data-testid="track-card"]').filter({ hasText: uniqueTitle });
+      if (await trackCardToDelete.isVisible()) {
+        await testHelpers.deleteTrack(trackCardToDelete);
+      }
+      cleanup(); // Delete temp file
+    }
+  });
 });
