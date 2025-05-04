@@ -122,7 +122,11 @@ jobs:
         run: ./eng/stop-test-server.sh
 
       - name: Upload test results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
+        if: always()
         with:
-          name: test-results
-          path: ci-test-results
+          name: test-results-${{ matrix.os }}-${{ matrix.node-version }}
+          path: |
+            src/web/test-results/
+            src/web/playwright-report/
+          retention-days: 7
