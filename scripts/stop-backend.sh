@@ -1,7 +1,7 @@
 #!/bin/bash
 # stop-backend.sh - Stop the Mixtape backend server running on port 4000
 
-PID=$(lsof -tiTCP:4000 -sTCP:LISTEN)
+PID=$(lsof -ti :4000)
 if [ -n "$PID" ]; then
   echo "Stopping backend server (PID $PID) on port 4000..."
   kill $PID
