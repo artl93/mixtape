@@ -51,7 +51,11 @@ router.post('/upload', uploadLimiter, requireAuth, upload.single('audio'), async
   try {
     const { title } = req.body;
     const file = req.file;
-    const user = req.user!; // requireAuth ensures user is present
+    const user = req.user;
+    
+    if (!user) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
     
     if (!file || !title) {
       return res.status(400).json({ error: 'Missing required fields.' });

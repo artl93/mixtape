@@ -38,10 +38,17 @@ const globalLimiter = rateLimit({
 app.use(globalLimiter);
 
 // Configure session
-const SESSION_SECRET = process.env.SESSION_SECRET || 'mixtape-dev-secret-change-in-production';
+const SESSION_SECRET = process.env.SESSION_SECRET;
+if (!SESSION_SECRET) {
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('SESSION_SECRET must be set in production environment');
+  }
+  console.warn('WARNING: Using default SESSION_SECRET for development. Set SESSION_SECRET environment variable for production.');
+}
+
 app.use(
   session({
-    secret: SESSION_SECRET,
+    secret: SESSION_SECRET || 'mixtape-dev-secret-only-for-development',
     resave: false,
     saveUninitialized: false,
     cookie: {

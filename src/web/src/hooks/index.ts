@@ -3,8 +3,10 @@ import axios from 'axios';
 import type { Track, EditFields, User } from '../types';
 import { getApiBase } from '../utils/api';
 
-// Configure axios to send cookies with requests
-axios.defaults.withCredentials = true;
+// Create a dedicated API client with credentials enabled
+const apiClient = axios.create({
+  withCredentials: true,
+});
 
 export const useAuth = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -13,7 +15,7 @@ export const useAuth = () => {
 
   useEffect(() => {
     // Check authentication status on mount
-    axios
+    apiClient
       .get(`${getApiBase()}/auth/status`)
       .then((res) => {
         if (res.data.authenticated) {
@@ -34,7 +36,7 @@ export const useAuth = () => {
 
   const logout = async () => {
     try {
-      await axios.post(`${getApiBase()}/auth/logout`);
+      await apiClient.post(`${getApiBase()}/auth/logout`);
       setUser(null);
       setAuthenticated(false);
     } catch (err) {
@@ -57,7 +59,7 @@ export const useTracks = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    axios
+    apiClient
       .get(`${getApiBase()}/api/tracks`)
       .then((res) => {
         setTracks(res.data.tracks);
@@ -83,7 +85,7 @@ export const useTracks = () => {
           track: editFields.track ? Number(editFields.track) : null,
         },
       };
-      await axios.patch(`${getApiBase()}/api/tracks/${trackId}`, patch);
+      await apiClient.patch(`${getApiBase()}/api/tracks/${trackId}`, patch);
       setTracks((prev) =>
         prev.map((t) =>
           t.id === trackId
@@ -103,7 +105,7 @@ export const useTracks = () => {
 
   const deleteTrack = async (trackId: number) => {
     try {
-      await axios.delete(`${getApiBase()}/api/tracks/${trackId}`);
+      await apiClient.delete(`${getApiBase()}/api/tracks/${trackId}`);
       setTracks((prev) => prev.filter((t) => t.id !== trackId));
       return true;
     } catch (err) {

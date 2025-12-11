@@ -2,6 +2,15 @@ import passport from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import pool from './db';
 
+// User type matching our database schema
+interface User {
+  id: number;
+  google_id: string;
+  email: string;
+  display_name: string;
+  profile_picture: string | null;
+}
+
 // Configure Google OAuth Strategy
 export function configureAuth() {
   const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
@@ -45,7 +54,7 @@ export function configureAuth() {
             );
           }
 
-          const user = result.rows[0];
+          const user = result.rows[0] as User;
           return done(null, user);
         } catch (error) {
           return done(error);
@@ -55,7 +64,7 @@ export function configureAuth() {
   );
 
   // Serialize user to session
-  passport.serializeUser((user: any, done) => {
+  passport.serializeUser((user: Express.User, done) => {
     done(null, user.id);
   });
 
@@ -66,7 +75,7 @@ export function configureAuth() {
       if (result.rowCount === 0) {
         return done(null, false);
       }
-      done(null, result.rows[0]);
+      done(null, result.rows[0] as User);
     } catch (error) {
       done(error);
     }
