@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Container, ThemeProvider, useMediaQuery, CssBaseline } from '@mui/material';
+import { Container, ThemeProvider, useMediaQuery, CssBaseline, CircularProgress, Box } from '@mui/material';
 import type { Track } from './types';
 import type { ThemeMode } from './types';
 import { Header } from './components/Header';
 import { TrackList } from './components/TrackList';
 import UploadTrack from './components/UploadTrack';
 import { BottomPlayerBar } from './components/BottomPlayerBar';
-import { useTracks, usePlayer, useEditTrack } from './hooks';
+import { LoginPage } from './components/LoginPage';
+import { useTracks, usePlayer, useEditTrack, useAuth } from './hooks';
 import { useAppTheme, getInitialThemeMode } from './theme';
 import { getApiBase } from './utils/api';
 
@@ -24,6 +25,9 @@ export default function App() {
   }, [themeMode]);
 
   const theme = useAppTheme(resolvedMode);
+
+  // Authentication
+  const { user, loading: authLoading, authenticated, login, logout } = useAuth();
 
   // Track management
   const { tracks, loading, error, addTrack, updateTrack, deleteTrack } = useTracks();
@@ -60,10 +64,41 @@ export default function App() {
     }
   };
 
+  // Show loading spinner while checking authentication
+  if (authLoading) {
+    return (
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <Header themeMode={themeMode} onThemeChange={setThemeMode} />
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            minHeight: '80vh',
+          }}
+        >
+          <CircularProgress />
+        </Box>
+      </ThemeProvider>
+    );
+  }
+
+  // Show login page if not authenticated
+  if (!authenticated) {
+    return (
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <Header themeMode={themeMode} onThemeChange={setThemeMode} />
+        <LoginPage onLogin={login} />
+      </ThemeProvider>
+    );
+  }
+
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <Header themeMode={themeMode} onThemeChange={setThemeMode} />
+      <Header themeMode={themeMode} onThemeChange={setThemeMode} user={user} onLogout={logout} />
       <Container maxWidth="md" sx={{ mt: 2 }}>
         <UploadTrack onUploadSuccess={addTrack} apiBase={getApiBase()} />
         <TrackList

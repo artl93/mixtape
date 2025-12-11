@@ -2,21 +2,59 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'path';
+import session from 'express-session';
+import cookieParser from 'cookie-parser';
+import passport, { configureAuth } from './services/auth';
 import tracksRouter from './routes/tracks';
+import authRouter from './routes/auth';
 
 // Load environment variables
 dotenv.config();
 
 const app = express();
-app.use(cors());
+
+// Configure CORS to allow credentials
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
+app.use(
+  cors({
+    origin: FRONTEND_URL,
+    credentials: true,
+  })
+);
+
 app.use(express.json());
+app.use(cookieParser());
+
+// Configure session
+const SESSION_SECRET = process.env.SESSION_SECRET || 'mixtape-dev-secret-change-in-production';
+app.use(
+  session({
+    secret: SESSION_SECRET,
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: process.env.NODE_ENV === 'production', // Use secure cookies in production
+      httpOnly: true,
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    },
+  })
+);
+
+// Initialize Passport
+configureAuth();
+app.use(passport.initialize());
+app.use(passport.session());
 
 // Health check route
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok', service: 'mixtape-backend' });
 });
 
-// TODO: Add routes for auth, audio, sharing, playlists, comments
+// Auth routes
+app.use('/auth', authRouter);
+
+// TODO: Add routes for audio, sharing, playlists, comments
 
 // Custom /uploads/:filename route to update ID3 tags on download
 import pool from './services/db';

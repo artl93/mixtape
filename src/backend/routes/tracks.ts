@@ -5,6 +5,7 @@ import path from 'path';
 import fs from 'fs';
 import { parseFile } from 'music-metadata';
 import type { ICommonTagsResult, IFormat } from 'music-metadata';
+import { requireAuth, type AuthenticatedRequest } from '../middleware/auth';
 
 const router = Router();
 
@@ -28,11 +29,13 @@ const upload = multer({ storage });
 
 // POST /api/tracks/upload
 // (trivial edit to force TypeScript to recognize this as a module)
-router.post('/upload', upload.single('audio'), async (req: Request, res: Response) => {
+router.post('/upload', requireAuth, upload.single('audio'), async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const { title, user_id } = req.body;
+    const { title } = req.body;
     const file = req.file;
-    if (!file || !title || !user_id) {
+    const user = req.user!; // requireAuth ensures user is present
+    
+    if (!file || !title) {
       return res.status(400).json({ error: 'Missing required fields.' });
     }
     const fileUrl = `/uploads/${file.filename}`;
@@ -62,7 +65,7 @@ router.post('/upload', upload.single('audio'), async (req: Request, res: Respons
     // Insert into DB (add id3 fields as JSON for now)
     const result = await pool.query(
       'INSERT INTO tracks (user_id, title, file_url, id3) VALUES ($1, $2, $3, $4) RETURNING *',
-      [user_id, id3.title, fileUrl, id3],
+      [user.id, id3.title, fileUrl, id3],
     );
     res.status(201).json({ track: result.rows[0] });
   } catch (err) {
@@ -109,7 +112,7 @@ router.get('/stream/:filename', (req: Request, res: Response) => {
 });
 
 // DELETE /api/tracks/:id
-router.delete('/:id', async (req: Request, res: Response) => {
+router.delete('/:id', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   const { id } = req.params;
   try {
     // Get the file_url from the database
@@ -135,7 +138,7 @@ router.delete('/:id', async (req: Request, res: Response) => {
 });
 
 // PATCH /api/tracks/:id - Edit track metadata (title, id3 fields)
-router.patch('/:id', async (req: Request, res: Response) => {
+router.patch('/:id', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   const { id } = req.params;
   const { title, id3 } = req.body;
   if (!title && !id3) {
@@ -180,8 +183,8 @@ router.get('/:id', async (req: Request, res: Response) => {
   }
 });
 
-// GET /api/tracks - List all tracks
-router.get('/', async (_req: Request, res: Response) => {
+// GET /api/tracks - List all tracks (requires authentication)
+router.get('/', requireAuth, async (_req: Request, res: Response) => {
   try {
     const result = await pool.query('SELECT * FROM tracks ORDER BY created_at DESC');
     res.json({ tracks: result.rows });

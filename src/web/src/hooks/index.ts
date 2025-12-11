@@ -1,7 +1,55 @@
 import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
-import type { Track, EditFields } from '../types';
+import type { Track, EditFields, User } from '../types';
 import { getApiBase } from '../utils/api';
+
+// Configure axios to send cookies with requests
+axios.defaults.withCredentials = true;
+
+export const useAuth = () => {
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [authenticated, setAuthenticated] = useState(false);
+
+  useEffect(() => {
+    // Check authentication status on mount
+    axios
+      .get(`${getApiBase()}/auth/status`)
+      .then((res) => {
+        if (res.data.authenticated) {
+          setUser(res.data.user);
+          setAuthenticated(true);
+        }
+        setLoading(false);
+      })
+      .catch(() => {
+        setLoading(false);
+      });
+  }, []);
+
+  const login = () => {
+    // Redirect to Google OAuth
+    window.location.href = `${getApiBase()}/auth/google`;
+  };
+
+  const logout = async () => {
+    try {
+      await axios.post(`${getApiBase()}/auth/logout`);
+      setUser(null);
+      setAuthenticated(false);
+    } catch (err) {
+      console.error('Logout failed:', err);
+    }
+  };
+
+  return {
+    user,
+    loading,
+    authenticated,
+    login,
+    logout,
+  };
+};
 
 export const useTracks = () => {
   const [tracks, setTracks] = useState<Track[]>([]);

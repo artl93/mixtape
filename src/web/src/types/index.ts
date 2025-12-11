@@ -13,6 +13,14 @@ export interface Track {
   };
 }
 
+export interface User {
+  id: number;
+  google_id: string;
+  email: string;
+  display_name: string;
+  profile_picture: string | null;
+}
+
 export interface EditFields {
   title: string;
   artist: string;
