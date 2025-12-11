@@ -64,7 +64,7 @@ export function configureAuth() {
   );
 
   // Serialize user to session
-  passport.serializeUser((user: Express.User, done) => {
+  passport.serializeUser((user: User, done) => {
     done(null, user.id);
   });
 

@@ -29,9 +29,10 @@ const UploadTrack: React.FC<UploadTrackProps> = ({ onUploadSuccess, apiBase }) =
     formData.append('audio', file);
     formData.append('title', title);
     try {
+      // Use XMLHttpRequest instead of axios for upload progress tracking
       const xhr = new XMLHttpRequest();
       xhr.open('POST', `${apiBase}/api/tracks/upload`);
-      // Enable sending cookies with the request
+      // Enable sending cookies with the request for authentication
       xhr.withCredentials = true;
       xhr.upload.onprogress = (e) => {
         if (e.lengthComputable) {
