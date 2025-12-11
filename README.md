@@ -10,6 +10,7 @@ Mixtape is a modern, scalable web application for musicians to upload, share, an
 
 ## Getting Started
 - Install dependencies: `./build.sh`
+- Start PostgreSQL: `./start-postgres.sh`
 - Set up the database: `./eng/mixtape-db-setup.sh`
 - Start/stop the backend: `./run-test-server.sh` / `./eng/stop-test-server.sh`
 - Run end-to-end tests: `./test-server.sh`
