@@ -205,21 +205,21 @@ const TrackCard: React.FC<TrackCardProps> = ({
           <IconButton
             size="small"
             onClick={() => onPlay(playingId === track.id ? null : track.id)}
-            color="default"
+            color={playingId === track.id ? 'primary' : 'default'}
             disabled={isEditing}
             aria-label={playingId === track.id ? 'Pause' : 'Play'}
           >
             {playingId === track.id ? <PauseIcon /> : <PlayArrowIcon />}
           </IconButton>
           <a href={`${API_BASE}${track.file_url}`} download style={{ textDecoration: 'none' }}>
-            <IconButton size="small" color="default" disabled={isEditing} aria-label="Download">
+            <IconButton size="small" disabled={isEditing} aria-label="Download">
               <DownloadIcon />
             </IconButton>
           </a>
           {isEditing ? (
             <>
               <IconButton
-                color="default"
+                color="primary"
                 onClick={() => onEditSave(track)}
                 aria-label="Save"
                 size="small"
@@ -227,7 +227,6 @@ const TrackCard: React.FC<TrackCardProps> = ({
                 <SaveIcon />
               </IconButton>
               <IconButton
-                color="default"
                 onClick={() => {
                   onEditCancel();
                 }}
@@ -240,7 +239,7 @@ const TrackCard: React.FC<TrackCardProps> = ({
           ) : (
             <>
               <IconButton
-                color="default"
+                color="primary"
                 onClick={() => onEdit(track)}
                 aria-label="Edit"
                 size="small"
@@ -248,7 +247,7 @@ const TrackCard: React.FC<TrackCardProps> = ({
                 <EditIcon />
               </IconButton>
               <IconButton
-                color="default"
+                color="error"
                 onClick={() => {
                   if (onRequestStopPlaying) onRequestStopPlaying();
                   onDeleteRequest(track.id);

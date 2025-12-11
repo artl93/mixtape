@@ -41,7 +41,7 @@ test.describe('Mixtape Web UI', () => {
 
   test('should play (stream) a track uploaded via the UI', async ({ cleanPage: page, testHelpers, browserName }) => {
     test.skip(browserName === 'webkit', 'Audio playback test is skipped on WebKit due to browser limitations.');
-    
+
     const { tempUploadPath, uniqueTitle, cleanup } = testHelpers.createTempTestFile('ui-upload-test-play');
 
     try {
@@ -68,7 +68,7 @@ test.describe('Mixtape Web UI', () => {
 
   test('should download a track uploaded via the UI as an MP3', async ({ cleanPage: page, testHelpers, browserName }) => {
     test.skip(browserName === 'webkit', 'Download event is not supported in WebKit by Playwright.');
-    
+
     const { tempUploadPath, uniqueTitle, cleanup } = testHelpers.createTempTestFile('ui-upload-test-dl');
 
     try {
