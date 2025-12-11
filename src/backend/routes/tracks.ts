@@ -1,5 +1,6 @@
 import { Request, Response, Router } from 'express';
 import multer from 'multer';
+import rateLimit from 'express-rate-limit';
 import pool from '../services/db';
 import path from 'path';
 import fs from 'fs';
@@ -8,6 +9,23 @@ import type { ICommonTagsResult, IFormat } from 'music-metadata';
 import { requireAuth } from '../middleware/auth';
 
 const router = Router();
+
+// Rate limiters for different operations
+const uploadLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // Limit each IP to 10 uploads per windowMs
+  message: 'Too many upload requests, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const modifyLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 30, // Limit each IP to 30 modify operations per windowMs
+  message: 'Too many requests, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 // Ensure uploads directory exists in _server-data/uploads
 const uploadDir = path.join(process.cwd(), '_server-data/uploads');
@@ -29,7 +47,7 @@ const upload = multer({ storage });
 
 // POST /api/tracks/upload
 // (trivial edit to force TypeScript to recognize this as a module)
-router.post('/upload', requireAuth, upload.single('audio'), async (req: Request, res: Response) => {
+router.post('/upload', uploadLimiter, requireAuth, upload.single('audio'), async (req: Request, res: Response) => {
   try {
     const { title } = req.body;
     const file = req.file;
@@ -112,7 +130,7 @@ router.get('/stream/:filename', (req: Request, res: Response) => {
 });
 
 // DELETE /api/tracks/:id
-router.delete('/:id', requireAuth, async (req: Request, res: Response) => {
+router.delete('/:id', modifyLimiter, requireAuth, async (req: Request, res: Response) => {
   const { id } = req.params;
   try {
     // Get the file_url from the database
@@ -138,7 +156,7 @@ router.delete('/:id', requireAuth, async (req: Request, res: Response) => {
 });
 
 // PATCH /api/tracks/:id - Edit track metadata (title, id3 fields)
-router.patch('/:id', requireAuth, async (req: Request, res: Response) => {
+router.patch('/:id', modifyLimiter, requireAuth, async (req: Request, res: Response) => {
   const { id } = req.params;
   const { title, id3 } = req.body;
   if (!title && !id3) {
@@ -184,7 +202,7 @@ router.get('/:id', async (req: Request, res: Response) => {
 });
 
 // GET /api/tracks - List all tracks (requires authentication)
-router.get('/', requireAuth, async (_req: Request, res: Response) => {
+router.get('/', modifyLimiter, requireAuth, async (_req: Request, res: Response) => {
   try {
     const result = await pool.query('SELECT * FROM tracks ORDER BY created_at DESC');
     res.json({ tracks: result.rows });

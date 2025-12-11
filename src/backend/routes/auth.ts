@@ -1,14 +1,25 @@
 import { Router } from 'express';
+import rateLimit from 'express-rate-limit';
 import passport from '../services/auth';
 
 const router = Router();
 
+// Stricter rate limiting for auth endpoints
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // Limit each IP to 10 auth requests per windowMs
+  message: 'Too many authentication attempts, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 // Initiate Google OAuth login
-router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
+router.get('/google', authLimiter, passport.authenticate('google', { scope: ['profile', 'email'] }));
 
 // Google OAuth callback
 router.get(
   '/google/callback',
+  authLimiter,
   passport.authenticate('google', { failureRedirect: '/login?error=auth_failed' }),
   (req, res) => {
     // Successful authentication, redirect to frontend
@@ -18,7 +29,7 @@ router.get(
 );
 
 // Logout
-router.post('/logout', (req, res) => {
+router.post('/logout', authLimiter, (req, res) => {
   req.logout((err) => {
     if (err) {
       return res.status(500).json({ error: 'Logout failed' });

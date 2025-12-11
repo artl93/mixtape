@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import path from 'path';
 import session from 'express-session';
 import cookieParser from 'cookie-parser';
+import rateLimit from 'express-rate-limit';
 import passport, { configureAuth } from './services/auth';
 import tracksRouter from './routes/tracks';
 import authRouter from './routes/auth';
@@ -24,6 +25,17 @@ app.use(
 
 app.use(express.json());
 app.use(cookieParser());
+
+// Global rate limiter - 100 requests per 15 minutes per IP
+const globalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per windowMs
+  message: 'Too many requests from this IP, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+app.use(globalLimiter);
 
 // Configure session
 const SESSION_SECRET = process.env.SESSION_SECRET || 'mixtape-dev-secret-change-in-production';
