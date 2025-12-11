@@ -1,5 +1,5 @@
 #!/bin/bash
-# run-server.sh - Starts the backend server using the eng/mixtape-server-start.sh script
+# run-backend.sh - Starts the backend server on port 4000
 set -e
 
 # Load environment variables from .env if present
@@ -12,7 +12,7 @@ PORT="${PORT:-4000}"
 NODE_ENV="${NODE_ENV:-development}"
 
 log() {
-  echo "[run-server.sh] $1"
+  echo "[run-backend.sh] $1"
 }
 
 log "Starting backend server on port $PORT (NODE_ENV=$NODE_ENV)..."
