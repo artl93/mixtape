@@ -1,13 +1,16 @@
 import { Request, Response, NextFunction } from 'express';
 
-export interface AuthenticatedRequest extends Request {
-  user?: {
-    id: number;
-    google_id: string;
-    email: string;
-    display_name: string;
-    profile_picture: string | null;
-  };
+// Extend Express Request to include our user type
+declare global {
+  namespace Express {
+    interface User {
+      id: number;
+      google_id: string;
+      email: string;
+      display_name: string;
+      profile_picture: string | null;
+    }
+  }
 }
 
 // Middleware to ensure user is authenticated

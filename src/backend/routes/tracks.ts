@@ -5,7 +5,7 @@ import path from 'path';
 import fs from 'fs';
 import { parseFile } from 'music-metadata';
 import type { ICommonTagsResult, IFormat } from 'music-metadata';
-import { requireAuth, type AuthenticatedRequest } from '../middleware/auth';
+import { requireAuth } from '../middleware/auth';
 
 const router = Router();
 
@@ -29,7 +29,7 @@ const upload = multer({ storage });
 
 // POST /api/tracks/upload
 // (trivial edit to force TypeScript to recognize this as a module)
-router.post('/upload', requireAuth, upload.single('audio'), async (req: AuthenticatedRequest, res: Response) => {
+router.post('/upload', requireAuth, upload.single('audio'), async (req: Request, res: Response) => {
   try {
     const { title } = req.body;
     const file = req.file;
@@ -112,7 +112,7 @@ router.get('/stream/:filename', (req: Request, res: Response) => {
 });
 
 // DELETE /api/tracks/:id
-router.delete('/:id', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
+router.delete('/:id', requireAuth, async (req: Request, res: Response) => {
   const { id } = req.params;
   try {
     // Get the file_url from the database
@@ -138,7 +138,7 @@ router.delete('/:id', requireAuth, async (req: AuthenticatedRequest, res: Respon
 });
 
 // PATCH /api/tracks/:id - Edit track metadata (title, id3 fields)
-router.patch('/:id', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
+router.patch('/:id', requireAuth, async (req: Request, res: Response) => {
   const { id } = req.params;
   const { title, id3 } = req.body;
   if (!title && !id3) {
