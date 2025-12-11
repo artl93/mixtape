@@ -71,7 +71,7 @@ const TrackCard: React.FC<TrackCardProps> = ({
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (isEditing && e.key === 'Escape') {
       onEditCancel();
-    } else {
+    } else if (!isEditing) {
       onKeyDown(e, track);
     }
   };

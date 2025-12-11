@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Player Test Page</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .test-section {
+      margin-bottom: 30px;
+      padding: 15px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    .test-title {
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+    .test-steps {
+      margin-bottom: 10px;
+    }
+    .test-result {
+      margin-top: 10px;
+      padding: 10px;
+      background-color: #f5f5f5;
+    }
+    .pass {
+      color: green;
+      font-weight: bold;
+    }
+    .fail {
+      color: red;
+      font-weight: bold;
+    }
+    button {
+      padding: 5px 10px;
+      margin-right: 5px;
+    }
+  </style>
+</head>
+<body>
+  <h1>BottomPlayerBar Component Tests</h1>
+  <p>This page helps verify the fixes for the audio player component.</p>
+  
+  <div class="test-section">
+    <div class="test-title">Test 1: Play/Pause/Restart Functionality</div>
+    <div class="test-steps">
+      <p><strong>Steps:</strong></p>
+      <ol>
+        <li>Click "Play Track" to start playback</li>
+        <li>Verify music starts playing</li>
+        <li>Click "Pause Track" to pause playback</li>
+        <li>Verify music stops</li>
+        <li>Click "Play Track" again to resume</li>
+        <li>Verify music continues from where it left off</li>
+      </ol>
+    </div>
+    <div>
+      <button id="test1-play">Play Track</button>
+      <button id="test1-pause">Pause Track</button>
+    </div>
+    <div class="test-result">
+      Result: <span id="test1-result">Not tested yet</span>
+    </div>
+  </div>
+
+  <div class="test-section">
+    <div class="test-title">Test 2: Slider Movement and Seeking</div>
+    <div class="test-steps">
+      <p><strong>Steps:</strong></p>
+      <ol>
+        <li>Start playback and observe the slider moving</li>
+        <li>Move the slider to a different position</li>
+        <li>Verify the audio position changes accordingly</li>
+      </ol>
+    </div>
+    <div>
+      <button id="test2-play">Start Playback</button>
+      <input type="range" id="test2-slider" min="0" max="100" value="0" style="width: 300px;">
+      <span id="test2-time">0:00</span>
+    </div>
+    <div class="test-result">
+      Result: <span id="test2-result">Not tested yet</span>
+    </div>
+  </div>
+
+  <div class="test-section">
+    <div class="test-title">Test 3: Duration Display</div>
+    <div class="test-steps">
+      <p><strong>Steps:</strong></p>
+      <ol>
+        <li>Load the track and check the duration display</li>
+        <li>Verify it shows the correct duration (not 0:00)</li>
+        <li>Start playback and check if the time counter updates properly</li>
+      </ol>
+    </div>
+    <div>
+      <button id="test3-load">Load Track</button>
+      <button id="test3-play">Play Track</button>
+      <div>Duration: <span id="test3-duration">Not loaded</span></div>
+      <div>Current Time: <span id="test3-currentTime">0:00</span></div>
+    </div>
+    <div class="test-result">
+      Result: <span id="test3-result">Not tested yet</span>
+    </div>
+  </div>
+
+  <audio id="test-audio" preload="metadata"></audio>
+
+  <script>
+    // Helper function to format time as MM:SS
+    function formatTime(seconds) {
+      if (!isFinite(seconds) || seconds < 0) return '0:00';
+      const mins = Math.floor(seconds / 60);
+      const secs = Math.floor(seconds % 60);
+      return `${mins}:${secs.toString().padStart(2, '0')}`;
+    }
+
+    // Test 1: Play/Pause/Restart
+    const audio1 = document.getElementById('test-audio');
+    const test1Play = document.getElementById('test1-play');
+    const test1Pause = document.getElementById('test1-pause');
+    const test1Result = document.getElementById('test1-result');
+
+    test1Play.addEventListener('click', () => {
+      audio1.src = 'http://localhost:3001/api/tracks/1/stream';
+      audio1.play()
+        .then(() => {
+          test1Result.textContent = 'Playing - check if audio is heard';
+          test1Result.className = '';
+        })
+        .catch(err => {
+          test1Result.textContent = 'Failed to play: ' + err.message;
+          test1Result.className = 'fail';
+        });
+    });
+
+    test1Pause.addEventListener('click', () => {
+      audio1.pause();
+      test1Result.textContent = 'Paused - check if audio stopped';
+    });
+
+    // Test 2: Slider Movement and Seeking
+    const test2Play = document.getElementById('test2-play');
+    const test2Slider = document.getElementById('test2-slider');
+    const test2Time = document.getElementById('test2-time');
+    const test2Result = document.getElementById('test2-result');
+
+    test2Play.addEventListener('click', () => {
+      audio1.src = 'http://localhost:3001/api/tracks/1/stream';
+      audio1.play()
+        .then(() => {
+          test2Result.textContent = 'Playing - slider should move';
+        })
+        .catch(err => {
+          test2Result.textContent = 'Failed to play: ' + err.message;
+          test2Result.className = 'fail';
+        });
+    });
+
+    audio1.addEventListener('durationchange', () => {
+      test2Slider.max = Math.floor(audio1.duration);
+      test2Result.textContent = 'Duration loaded: ' + formatTime(audio1.duration);
+    });
+
+    audio1.addEventListener('timeupdate', () => {
+      test2Slider.value = audio1.currentTime;
+      test2Time.textContent = formatTime(audio1.currentTime);
+    });
+
+    test2Slider.addEventListener('input', () => {
+      const seekTime = parseFloat(test2Slider.value);
+      audio1.currentTime = seekTime;
+      test2Time.textContent = formatTime(seekTime);
+      test2Result.textContent = 'Seek attempted to ' + formatTime(seekTime);
+    });
+
+    // Test 3: Duration Display
+    const test3Load = document.getElementById('test3-load');
+    const test3Play = document.getElementById('test3-play');
+    const test3Duration = document.getElementById('test3-duration');
+    const test3CurrentTime = document.getElementById('test3-currentTime');
+    const test3Result = document.getElementById('test3-result');
+
+    test3Load.addEventListener('click', () => {
+      audio1.src = 'http://localhost:3001/api/tracks/1/stream';
+      audio1.load();
+      test3Result.textContent = 'Loading track...';
+    });
+
+    audio1.addEventListener('loadedmetadata', () => {
+      test3Duration.textContent = formatTime(audio1.duration);
+      test3Result.textContent = 'Metadata loaded, duration: ' + formatTime(audio1.duration);
+      
+      if (audio1.duration > 0) {
+        test3Result.className = 'pass';
+        test3Result.textContent += ' - PASS';
+      } else {
+        test3Result.className = 'fail';
+        test3Result.textContent += ' - FAIL (duration is 0)';
+      }
+    });
+
+    test3Play.addEventListener('click', () => {
+      audio1.play()
+        .then(() => {
+          setInterval(() => {
+            test3CurrentTime.textContent = formatTime(audio1.currentTime);
+          }, 1000);
+        });
+    });
+
+    audio1.addEventListener('error', () => {
+      test1Result.textContent = 'Error loading audio';
+      test1Result.className = 'fail';
+      test2Result.textContent = 'Error loading audio';
+      test2Result.className = 'fail';
+      test3Result.textContent = 'Error loading audio';
+      test3Result.className = 'fail';
+    });
+  </script>
+</body>
+</html>
