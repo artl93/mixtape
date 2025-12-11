@@ -17,9 +17,9 @@ else
 fi
 
 # 2. Start backend if not running
-if ! lsof -i :4000 | grep LISTEN >/dev/null 2>&1; then
+if [ -z "$(lsof -ti :4000)" ]; then
   echo "[run-full-stack.sh] Starting backend server..."
-  ./run-backend.sh
+  ./scripts/run-backend.sh
   sleep 5
 else
   echo "[run-full-stack.sh] Backend server is already running on port 4000."
@@ -27,7 +27,7 @@ fi
 
 # 3. Start frontend (React dev server)
 cd src/web
-if ! lsof -i :3000 | grep LISTEN >/dev/null 2>&1; then
+if [ -z "$(lsof -ti :3000)" ]; then
   echo "[run-full-stack.sh] Starting frontend (React dev server)..."
   npm install --legacy-peer-deps
   npm start &
