@@ -1,7 +1,57 @@
 import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
-import type { Track, EditFields } from '../types';
+import type { Track, EditFields, User } from '../types';
 import { getApiBase } from '../utils/api';
+
+// Create a dedicated API client with credentials enabled
+const apiClient = axios.create({
+  withCredentials: true,
+});
+
+export const useAuth = () => {
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [authenticated, setAuthenticated] = useState(false);
+
+  useEffect(() => {
+    // Check authentication status on mount
+    apiClient
+      .get(`${getApiBase()}/auth/status`)
+      .then((res) => {
+        if (res.data.authenticated) {
+          setUser(res.data.user);
+          setAuthenticated(true);
+        }
+        setLoading(false);
+      })
+      .catch(() => {
+        setLoading(false);
+      });
+  }, []);
+
+  const login = () => {
+    // Redirect to Google OAuth
+    window.location.href = `${getApiBase()}/auth/google`;
+  };
+
+  const logout = async () => {
+    try {
+      await apiClient.post(`${getApiBase()}/auth/logout`);
+      setUser(null);
+      setAuthenticated(false);
+    } catch (err) {
+      console.error('Logout failed:', err);
+    }
+  };
+
+  return {
+    user,
+    loading,
+    authenticated,
+    login,
+    logout,
+  };
+};
 
 export const useTracks = () => {
   const [tracks, setTracks] = useState<Track[]>([]);
@@ -9,7 +59,7 @@ export const useTracks = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    axios
+    apiClient
       .get(`${getApiBase()}/api/tracks`)
       .then((res) => {
         setTracks(res.data.tracks);
@@ -35,7 +85,7 @@ export const useTracks = () => {
           track: editFields.track ? Number(editFields.track) : null,
         },
       };
-      await axios.patch(`${getApiBase()}/api/tracks/${trackId}`, patch);
+      await apiClient.patch(`${getApiBase()}/api/tracks/${trackId}`, patch);
       setTracks((prev) =>
         prev.map((t) =>
           t.id === trackId
@@ -55,7 +105,7 @@ export const useTracks = () => {
 
   const deleteTrack = async (trackId: number) => {
     try {
-      await axios.delete(`${getApiBase()}/api/tracks/${trackId}`);
+      await apiClient.delete(`${getApiBase()}/api/tracks/${trackId}`);
       setTracks((prev) => prev.filter((t) => t.id !== trackId));
       return true;
     } catch (err) {
