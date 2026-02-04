@@ -40,3 +40,8 @@ CREATE TABLE IF NOT EXISTS comments (
     content TEXT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Seed default test user for local development
+INSERT INTO users (id, email, display_name) 
+VALUES (1, 'dev@mixtape.local', 'Dev User') 
+ON CONFLICT (id) DO NOTHING;
